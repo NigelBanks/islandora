@@ -11,7 +11,6 @@
 */
 class FormBuilder {
   function FormBuilder() {
-    module_load_include('inc', 'FormBuilder', '');
     drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
   }
 
@@ -147,7 +146,7 @@ class FormBuilder {
     if (!empty($form_values['ingest-file-location'])) {
       $this->createFedoraDataStreams($form_values, $dom, $rootElement);
     }
-    $this->createPolicy($collectionPid, &$dom, &$rootElement);
+    $this->createPolicy($collectionPid, $dom, $rootElement);
 
     try {
       
@@ -310,7 +309,6 @@ class FormBuilder {
       '#type' => 'fieldset',
       '#title' => t('Ingest digital object step #2'),
     );
-    
     foreach ($elements as $element) {
         $el = array(
           '#title' => $element['label'],
