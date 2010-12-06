@@ -735,26 +735,31 @@ function theme_other_select($element)
   return theme('form_element', $element, '<select name="'. $element['#name'] .'" '. drupal_attributes($element['#attributes']) .' id="'. $element['#id'] .'" '. $size .'>'. form_select_options($element) .'</select>');
 }
 
+function input_tag()
+{
+  
+}
+
 function theme_list($element)
 {
-  $path=drupal_get_path('module','islandora_form_elements');
+  $path = drupal_get_path('module','islandora_form_elements');
   drupal_add_js($path.'/js/jquery.tag.editor-min.js');
   drupal_add_js('$(document).ready(function () { $(\'#'.$element['#id'].'\').tagEditor({   separator: \';\', confirmRemoval: false, completeOnBlur: true }); }); ', 'inline');
   drupal_add_css($path.'/css/list.css');
   $output .= '';
-
- //return theme('theme_form_element', $element, '<div class="container-inline mark">' . $element['#children'] . '</div>');
   
-   $size = empty($element['#size']) ? 'size="25"' : ' size="'. $element['#size'] .'"';
+  //return theme('theme_form_element', $element, '<div class="container-inline mark">' . $element['#children'] . '</div>');
+  
+  $size = empty($element['#size']) ? 'size="25"' : ' size="'. $element['#size'] .'"';
   $maxlength = empty($element['#maxlength']) ? '' : ' maxlength="'. $element['#maxlength'] .'"';
   $class = array('form-text','listElement');
   $extra = '';
   $output='<div class="container-inline mark">';
 
-    if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path']))) {
-   drupal_add_js('misc/autocomplete.js');
-   $class[] = 'form-autocomplete';
-   $extra =  '<input class="autocomplete" type="hidden" id="'. $element['#id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
+   if ($element['#autocomplete_path'] && menu_valid_path(array('link_path' => $element['#autocomplete_path']))) {
+     drupal_add_js('misc/autocomplete.js');
+     $class[] = 'form-autocomplete';
+     $extra =  '<input class="autocomplete" type="hidden" id="'. $element['#id'] .'-autocomplete" value="'. check_url(url($element['#autocomplete_path'], array('absolute' => TRUE))) .'" disabled="disabled" />';
    }
    _form_set_class($element, $class);
    
@@ -768,12 +773,13 @@ function theme_list($element)
      $output .= ' <span class="field-suffix">'. $element['#field_suffix'] .'</span>';
    }
    
-   $path=drupal_get_path('module','islandora_form_elements');
+   $path = drupal_get_path('module','islandora_form_elements');
    drupal_add_css($path.'/css/sticky.css');
    $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
    $sticky = (isset($element['#sticky']) && $element['#sticky'] == TRUE?'<input class="sticky" type="checkbox" name="'.$stickyName.'"'.(isset($element['#sticky_on']) && $element['#sticky_on']==TRUE?' checked="checked"':'').'/><br/>':'');
 
-   
+   $output.='</div>'; 
+
    return theme('form_element', $element, $output . $sticky ) . $extra;  
   
   
@@ -892,7 +898,7 @@ function theme_datepicker($element) {
    $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
    $sticky = (isset($element['#sticky']) && $element['#sticky'] == TRUE?'<input class="sticky" type="checkbox" name="'.$stickyName.'"'.(isset($element['#sticky_on']) && $element['#sticky_on']==TRUE?' checked="checked"':'').'/><br/>':'');
 
-
+   $output.='</div>'; 
    
    return theme('form_element', $element, $output.$sticky ) . $extra;  
  
@@ -940,7 +946,7 @@ function theme_sticky_textfield($element) {
    $sticky = (isset($element['#sticky']) && $element['#sticky'] == TRUE?'<input class="sticky" type="checkbox" name="'.$stickyName.'"'.(isset($element['#sticky_on']) && $element['#sticky_on']==TRUE?' checked="checked"':'').'/><br/>':'');
 
 
-   
+   $output = $output . "</div>";
    return theme('form_element', $element, $output . $sticky) . $extra;  
  
 }
