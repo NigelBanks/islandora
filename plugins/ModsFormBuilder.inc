@@ -210,7 +210,7 @@ class FormElement extends ArrayObject
       }
       $people[]=$person;
     }
-    $names = $xpath->evaluate('/mods:mods/mods:subject/mods:name');
+    $names = $modsFileToEditXPath->evaluate('/mods:mods/mods:subject/mods:name');
     foreach ($names as $mname) {
       $type = $mname->getAttribute('type');
       $nameParts = $mname->getElementsByTagName('namePart');
@@ -252,8 +252,8 @@ class FormElement extends ArrayObject
       }
       $people[]=$person;
     }
+    $this['#default_value'] = $people;  
   }
-  $this['#default_value'] = $people;
 }
 /******************************************************************************** 
  * Class: ModsFormBuilder
