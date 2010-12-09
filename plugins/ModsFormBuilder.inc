@@ -877,7 +877,7 @@ class ModsFormBuilder extends FormBuilder
     // Hierarchical Geographic Subject
     if (isset($form_values['mods_country']) && trim($form_values['mods_country']) != '') {
       $hasSubject = TRUE;
-      $geographic = $dom->createElement('mods:geographic');
+      $geographic = $dom->createElement('mods:hierarchicalGeographic');
       
       $country=$dom->createElement('mods:country', htmlspecialchars($form_values['mods_country']));
       $geographic->appendChild($country);
