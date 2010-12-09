@@ -287,6 +287,81 @@ class ModsFormBuilder extends FormBuilder
     }
   }
   //-----------------------------------------------------------------------------
+  // isDatastreamManaged
+  // Params: 
+  //  dsid - datastream identifier
+  // Returns: True if the datastream is managed, false otherwise.
+  //
+  // Used to test if a datastream is managed or not.
+  //-----------------------------------------------------------------------------
+  private function isDatastreamManaged($dsid)
+  {
+    $datastream = $this->fedoraItem->get_datastream($dsid);
+    return $datastream->controlGroup == 'M';
+  }
+  //-----------------------------------------------------------------------------
+  // modifyManagedDatastream
+  // Params: 
+  //  dom - xml document that will replace the datastream
+  //  dsid - datastream identifier
+  //  label - datastream label
+  //  mime_type - mime the datastream is stored as.
+  // Returns: None
+  //
+  // Modifies the given datastream to be same as the dom document. Only works
+  // with managed datastreams. Creates a tempory file to do so.
+  //-----------------------------------------------------------------------------
+  private function modifyManagedDatastream($dom, $dsid, $label, $mime_type)
+  {
+    $tempFileDir = file_directory_temp();
+    $tempFilePath = file_create_filename("modsdatastream.xml", $tempFileDir);
+    if ( $dom->save($tempFilePath) ) {
+      $tempFileUrl = file_create_url($tempFilePath);
+      if ($this->fedoraItem->modify_datastream_by_reference($tempFileUrl, $dsid, $label, $mime_type) !== NULL) { 
+        drupal_set_message(t('Successfully updated %dsid datastream for object %pid', array('%pid'=>$this->pid, '%dsid'=>$dsid)));
+      }
+    }
+  }
+  //-----------------------------------------------------------------------------
+  // modifyInlineDatastream
+  // Params: 
+  //  dom - xml document that will replace the datastream
+  //  dsid - datastream identifier
+  //  label - datastream label
+  //  mime_type - mime the datastream is stored as.
+  // Returns: None
+  //
+  // Modifies the given datastream to be same as the dom document. Only works
+  // with inline datastreams.
+  //-----------------------------------------------------------------------------
+  private function modifyInlineDatastream($dom, $dsid, $label, $mime_type)
+  {
+    if ($this->fedoraItem->modify_datastream_by_value($dom->saveXML(), $dsid, $label, $mime_type) !== NULL) {
+      drupal_set_message(t('Successfully updated %dsid datastream for object %pid', array('%pid'=>$this->pid, '%dsid'=>$dsid)));
+    }
+  }
+  //-----------------------------------------------------------------------------
+  // modifyDatastream
+  // Params: 
+  //  dom - xml document that will replace the datastream
+  //  dsid - datastream identifier
+  //  label - datastream label
+  //  mime_type - mime the datastream is stored as.
+  // Returns: None
+  //
+  // Modifies the given datastream to be same as the dom document. Does so by 
+  // value for inline datastreams and by reference for managed datastreams.
+  //-----------------------------------------------------------------------------
+  private function modifyDatastream($dom, $dsid, $label, $mime_type)
+  {
+    if($this->isDatastreamManaged($dsid)) {
+      $this->modifyManagedDatastream($dom, $dsid, $label, $mime_type);
+    }
+    else {
+      $this->modifyInlineDatastream($dom, $dsid, $label, $mime_type);
+    }
+  }
+  //-----------------------------------------------------------------------------
   // handleEditMetadataForm
   // Params: 
   //  form_id - Form element id. Not used.
@@ -305,18 +380,14 @@ class ModsFormBuilder extends FormBuilder
     $dom->formatOutput = TRUE;
     $modsNode = $this->modsFromForm($form_values,$dom);
     $dom->appendChild($modsNode);
-    if ($this->fedoraItem->modify_datastream_by_value($dom->saveXML(), 'MODS', "MODS Record", 'text/xml') !== NULL) {
-      drupal_set_message(t('Successfully updated MODS datastream for object %pid', array('%pid'=>$this->pid)));
-    }
+    $this->modifyDatastream($dom, 'MODS', 'MODS Record', 'text/xml');
     // Dublin Core
     $modsXML = $dom->saveXML($modsNode);
     $dom = new DomDocument("1.0", "UTF-8");
     $dom->formatOutput = TRUE;
     $dublinCore = $this->transformModsToDublinCore($modsXML, $dom);
     $dom->appendChild($dublinCore);
-    if ($this->fedoraItem->modify_datastream_by_value($dom->saveXML(), 'DC', "Dublin Core Record", 'text/xml') !== NULL) {
-      drupal_set_message(t('Successfully updated DC datastream for object %pid', array('%pid'=>$this->pid)));
-    }
+    $this->modifyDatastream($dom, 'DC', "Dublin Core Record", 'text/xml'); 
     // Show Created Object
     drupal_goto('/fedora/repository/'.$this->pid);
   }
@@ -676,7 +747,7 @@ class ModsFormBuilder extends FormBuilder
     
     if (isset($form_values['mods_identifier']) && trim($form_values['mods_identifier']) != '') {
       $identifier = $dom->createElement('mods:identifier', htmlspecialchars(trim($form_values['mods_identifier'])));
-      $identifier->setAttribute('type', 'local');
+      $identifier->setAttribute('type', 'paro');
       $mods->appendChild($identifier);
     }
     
