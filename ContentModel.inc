@@ -485,6 +485,17 @@ class ContentModel extends XMLDatastream {
     }
     return $ret;
   }
+  //----------------------------------------------------------------------------- 
+  // getFormComponents
+  // Params: none.
+  // Returns: none.
+  // 
+  //----------------------------------------------------------------------------- 
+  public function getFormCompositionAsXMLString() 
+  {
+    if(!$this->validate()) return FALSE;
+    return $this->xml->saveXML($this->xml->getElementsbyTagName('form_composition')->item(0));
+  }
 
   /**
    * Gets an array of form elements to use in the ingest form.  The results of this array are passed
@@ -1021,6 +1032,10 @@ class ContentModel extends XMLDatastream {
       $form['content_model_name'] = array(
         '#type' => 'hidden',
         '#value' => 'ISLANDORACM',
+      );
+      $form['content_model_pid'] = array(
+        '#type' => 'hidden',
+        '#value' => $this->pid,
       );
       $form['models'] = array( //content models available
         '#type' => 'hidden',

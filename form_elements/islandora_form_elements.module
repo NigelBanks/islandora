@@ -88,6 +88,10 @@ function islandora_form_elements_elements() {
     '#process' => array('ife_datepicker_process'),
   );
   
+  $type['tabpanel'] = array(
+    '#input'=> TRUE,
+    '#process' => array('ife_tabpanel_process'),
+  );
   return $type;
 }
 
@@ -126,95 +130,101 @@ function ife_fieldset_children_has_value($el)
   return $ret;
 }
 
+//-------------------------------------------------------------------------------
+function ife_tabpanel_process($element,$edit,&$form_state)
+{
+  $element['#tree'] = TRUE;
+  $element['#prefix'] = '<div class="clear-block" id="ife-themeInfo-wrapper">';
+  $element['#suffix'] = '</div>';
+  $element['children']['#tree'] = TRUE;
+  $element['children']['#type'] = 'fieldset';
+  $element['add_tab'] = array(
+    '#type' => 'submit',
+    '#weight' => 4, 
+    '#size' => 30,
+    '#submit' => array('ife_add_tabpanel_submit'), // If no javascript action.
+    '#ahah' => array(
+      'path' => 'ife/tabpanel_ahah',
+      'wrapper' => 'ife-themeInfo-wrapper',
+      'method' => 'replace',
+      'effect' => 'fade'
+    ),
+  );
+  return $element;
+}
 
 function ife_people_process($element,$edit,&$form_state) 
 {
+  $element['#tree'] = TRUE;
+  $element['#prefix'] = '<div class="clear-block" id="ife-people-wrapper">';
+  $element['#suffix'] = '</div>';
   
-    $element['#tree'] = TRUE;
-    $element['#prefix'] = '<div class="clear-block" id="ife-people-wrapper">';
-    $element['#suffix'] = '</div>';
-  
-    $element['people'] = array(
-      '#tree' => TRUE,
-      '#prefix' => '<div id="ife-people">',
-      '#suffix' => '</div>',
-      '#theme' => 'people_items',
-    );
+  $element['people'] = array(
+    '#tree' => TRUE,
+    '#prefix' => '<div id="ife-people">',
+    '#suffix' => '</div>',
+    '#theme' => 'people_items',
+  );
 
-    
-    if (isset($form_state['post'][$element['#name']]['add_from_repository']) && trim($form_state['post'][$element['#name']]['add_from_repository']) != '') {
-      
-      $people= array();
-      if (isset($form_state['storage']['people']) && !empty($form_state['storage']['people'])) {
-	foreach ($form_state['storage']['people'] as $ent) {
-	  if ( trim($ent['name']) != '' || trim($ent['organization']) != '' || trim($ent['conference']) != '' || trim($ent['role']) != '' || trim($ent['date']) != '') {
-	    $people[]=$ent;
-	  }
-	}
-      } 
-      
-      
-      $json = json_decode($form_state['post'][$element['#name']]['add_from_repository']);
-      $person=array();
-//         ob_start(); echo '<pre>'; var_dump($json); echo '</pre>'; drupal_set_message(ob_get_contents()); ob_end_clean();
-      
-      switch ($json->type)
-      {
-	case 'personal':
-	  $person['name']=$json->name;
-	  $person['role']=$json->role;
-	  $person['subject']=$json->subject;
-	  $person['date']=$json->date;
-	  break;
-	case 'organization':
-	  $person['organization'] = $json->name;
-	  $person['role'] = $json->role;
-	  $person['subject']=$json->subject;
-	  break;
-	case 'conference':
-	  $person['conference'] = $json->name;
-	  $person['role'] = $json->role;
-	  $person['date'] = $json->date;
-	  $person['subject']=$json->subject;
-	  break;
+  if (isset($form_state['post'][$element['#name']]['add_from_repository']) && trim($form_state['post'][$element['#name']]['add_from_repository']) != '') {
+    $people = array();
+    if (isset($form_state['storage']['people']) && !empty($form_state['storage']['people'])) {
+      foreach ($form_state['storage']['people'] as $ent) {
+        if ( trim($ent['name']) != '' || trim($ent['organization']) != '' || trim($ent['conference']) != '' || trim($ent['role']) != '' || trim($ent['date']) != '') {
+          $people[]=$ent;
+        }
       }
-      
-      $people[]=$person;
-
-      $form_state['storage']['people']=$people;
-      
-      
-    } else if (!isset($form_state['storage']['people']) || empty($form_state['storage']['people']))
-    {
-      if ( (!isset($form_state['clicked_button']) || count($form_state['clicked_button']) == 0) && isset($element['#default_value']) && is_array($element['#default_value']) ) {
-	$form_state['storage']['people']=$element['#default_value'];
-	if (count($element['#default_value']) > 0)  {
-	    $element['#collapsed'] = FALSE;
-	}
-	
-      } else  {
-	$form_state['storage']['people']=array( array('name'=>'', 'role'=>'', 'date'=>'', 'subject' => ''));
-      }
+    } 
+    $json = json_decode($form_state['post'][$element['#name']]['add_from_repository']);
+    $person=array();
+    // ob_start(); echo '<pre>'; var_dump($json); echo '</pre>'; drupal_set_message(ob_get_contents()); ob_end_clean();
+    switch ($json->type) {
+      case 'personal':
+        $person['name']=$json->name;
+        $person['role']=$json->role;
+        $person['subject']=$json->subject;
+        $person['date']=$json->date;
+        break;
+      case 'organization':
+        $person['organization'] = $json->name;
+        $person['role'] = $json->role;
+        $person['subject']=$json->subject;
+        break;
+      case 'conference':
+        $person['conference'] = $json->name;
+        $person['role'] = $json->role;
+        $person['date'] = $json->date;
+        $person['subject']=$json->subject;
+        break;
     }
+    $people[]=$person;
+    $form_state['storage']['people']=$people;
     
-    $i=0;
-    foreach ($form_state['storage']['people'] as $person)
-    {
-
-      $person['delta'] = $i;
-      $type='person';
-      if (isset($person['organization']))
-      {
-	$type='organization';
-      } else if (isset($person['conference']))
-      {
-	$type='conference';
+  }
+  else if (!isset($form_state['storage']['people']) || empty($form_state['storage']['people'])) {
+    if ( (!isset($form_state['clicked_button']) || count($form_state['clicked_button']) == 0) && isset($element['#default_value']) && is_array($element['#default_value']) ) {
+      $form_state['storage']['people']=$element['#default_value'];
+      if (count($element['#default_value']) > 0)  {
+        $element['#collapsed'] = FALSE;
       }
-      
-      $element['people']['entity'.$i] = array('#type'=>$type, '#default_value'=>$person);
-      $i++;
+    } 
+    else  {
+      $form_state['storage']['people']=array( array('name'=>'', 'role'=>'', 'date'=>'', 'subject' => ''));
     }
-
+  }
+  $i=0;
+  foreach ($form_state['storage']['people'] as $person) {
+    $person['delta'] = $i;
+    $type='person';
+    if (isset($person['organization'])) {
+      $type='organization';
+    } 
+    else if (isset($person['conference'])) {
+      $type='conference';
+    }
+    $element['people']['entity'.$i] = array('#type'=>$type, '#default_value'=>$person);
+    $i++;
+  }
   $element['add_from_repository'] = array(
     '#type' => 'textfield',
     '#autocomplete_path' => 'autocomplete_person/',
@@ -224,7 +234,6 @@ function ife_people_process($element,$edit,&$form_state)
     '#title'=> t('Add entity from repository'),
     '#description'=>t('To add an existing entity, simply start typing the name of the person, organization or conference and select the desired name from the resulting dropdown list.')
   );
-
   $element['add_person'] = array(
       '#type' => 'submit',
       '#prefix' => '<div id="add-more-people-button">',
@@ -234,42 +243,40 @@ function ife_people_process($element,$edit,&$form_state)
       '#weight' => 3,
       '#submit' => array('ife_add_person_submit'), // If no javascript action.
       '#ahah' => array(
-	'path' => 'ife/people_ahah',
-	'wrapper' => 'ife-people',
-	'method' => 'replace',
-	'effect' => 'fade',
+        'path' => 'ife/people_ahah',
+        'wrapper' => 'ife-people',
+        'method' => 'replace',
+        'effect' => 'fade',
       ),
     );
- 
-$element['add_organization'] = array(
-      '#type' => 'submit',
-      '#prefix' => '<div id="add-more-org-button">',
-      '#suffix' => '<label for="edit-tabs-more">'. t('Add Organization') .'</label></div>',
-      '#value' => t('Add Organization'),
-      '#attributes' => array('class' => 'add-org', 'title' => t('Click here to add an organization.')),
-      '#weight' => 2,
-      '#submit' => array('ife_add_org_submit'), // If no javascript action.
-      '#ahah' => array(
-	'path' => 'ife/people_ahah',
-	'wrapper' => 'ife-people',
-	'method' => 'replace',
-	'effect' => 'fade',
+   $element['add_organization'] = array(
+     '#type' => 'submit',
+     '#prefix' => '<div id="add-more-org-button">',
+     '#suffix' => '<label for="edit-tabs-more">'. t('Add Organization') .'</label></div>',
+     '#value' => t('Add Organization'),
+     '#attributes' => array('class' => 'add-org', 'title' => t('Click here to add an organization.')),
+     '#weight' => 2,
+     '#submit' => array('ife_add_org_submit'), // If no javascript action.
+     '#ahah' => array(
+       'path' => 'ife/people_ahah',
+       'wrapper' => 'ife-people',
+       'method' => 'replace',
+       'effect' => 'fade',
       ),
     );
-    
    $element['add_conference'] = array(
-      '#type' => 'submit',
-      '#prefix' => '<div id="add-more-conf-button">',
-      '#suffix' => '<label for="edit-tabs-more">'. t('Add Conference') .'</label></div>',
-      '#value' => t('Add Conference'),
-      '#attributes' => array('class' => 'add-conf', 'title' => t('Click here to add a conference.')),
-      '#weight' => 1,
-      '#submit' => array('ife_add_conf_submit'), // If no javascript action.
-      '#ahah' => array(
-	'path' => 'ife/people_ahah',
-	'wrapper' => 'ife-people',
-	'method' => 'replace',
-	'effect' => 'fade',
+     '#type' => 'submit',
+     '#prefix' => '<div id="add-more-conf-button">',
+     '#suffix' => '<label for="edit-tabs-more">'. t('Add Conference') .'</label></div>',
+     '#value' => t('Add Conference'),
+     '#attributes' => array('class' => 'add-conf', 'title' => t('Click here to add a conference.')),
+     '#weight' => 1,
+     '#submit' => array('ife_add_conf_submit'), // If no javascript action.
+     '#ahah' => array(
+       'path' => 'ife/people_ahah',
+       'wrapper' => 'ife-people',
+       'method' => 'replace',
+       'effect' => 'fade',
       ),
     );      
    return $element;
@@ -669,15 +676,12 @@ function islandora_form_elements_theme() {
     'sticky_textfield' => array(
       'arguments' => array('element'),
     ),
-
     'sticky_textarea' => array(
       'arguments' => array('element'),
     ), 
-
     'sticky_select' => array(
       'arguments' => array('element'),
     ), 
-
     'filechooser' => array(
       'arguments' => array('element'),
       'file' => 'includes/filechooser.inc'
@@ -688,8 +692,7 @@ function islandora_form_elements_theme() {
     'other_select' => array(
       'arguments' => array('element'),
     ),
-
-     'people' => array(
+    'people' => array(
        'arguments' => array('element'),
        'file'=> 'includes/people.inc',
      ),
@@ -702,6 +705,14 @@ function islandora_form_elements_theme() {
     ),
     'copyright' => array(
       'arguments' => array('element'),
+    ),
+    'tabpanel' => array(
+      'arguments' => array('element'),
+      'file' => 'includes/tabpanel.inc',
+    ),
+    'tabpanel_items' => array(
+      'arguments' => array('form' => NULL),
+      'file'=> 'includes/people.inc',
     ),
   );
 }
@@ -866,7 +877,7 @@ function theme_datepicker($element) {
   drupal_add_js($path.'/js/jquery.ui.core.js');
   drupal_add_js($path.'/js/jquery.ui.widget.js');
   drupal_add_js($path.'/js/jquery.ui.datepicker.js');
-  drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.4.custom.css');
+  drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.7.custom.css');
   $js = '$(document).ready(function () { $(\'#'.$element['#id'].'\').datepicker({  buttonImage: \''.$base_url.'/'.$path.'/images/date.png\', constrainInput: false, showOn: \'button\', changeMonth: true, changeYear: true }); });';
   
   $size = empty($element['#size']) ? '' : ' size="'. $element['#size'] .'"';
@@ -980,6 +991,13 @@ function islandora_form_elements_menu()
     'type' => MENU_CALLBACK,
     'access arguments' => array(ObjectHelper::$INGEST_FEDORA_OBJECTS),
     'file' => 'includes/people.inc',
+  );
+
+  $items['ife/tabpanel_ahah'] = array(
+    'page callback' => 'ife_tabpanel_ahah',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array(ObjectHelper::$INGEST_FEDORA_OBJECTS),
+    'file' => 'includes/tabpanel.inc',
   );
   
   $items['autocomplete_marcrelator/%'] = array(

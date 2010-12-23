@@ -1,3 +1,4 @@
+
 <?php
 
 // $Id$
@@ -11,8 +12,9 @@
  *  Generates a drupal form for editing an existing MODS data-streams as well as
  *  a form for ingesting an object with a MODS data-stream.
  */
+module_load_include('inc', 'fedora_repository', 'api/utils.inc');
+module_load_include('inc', 'fedora_repository', 'plugins/FormComposition');
 module_load_include('inc', 'fedora_repository', 'plugins/FormBuilder');
-
 
 //-------------------------------------------------------------------------------
 // say
@@ -25,6 +27,114 @@ module_load_include('inc', 'fedora_repository', 'plugins/FormBuilder');
 function say($a)
 {
   echo '<div>'. print_r($a, true) .'</div>';
+}
+
+/******************************************************************************** 
+ * Class: ModsDocument
+ *
+ * Description: 
+ *
+ *******************************************************************************/
+class ModsDocumentFromForm
+{
+  static $MODS_NS = 'http://www.loc.gov/mods/v3';
+  private $dom = NULL;
+  private $form_values = NULL;
+  private $fedora_item = NULL;
+  private $xpath = NULL;
+  //-----------------------------------------------------------------------------
+  // Constructor
+  // Params: 
+  //  
+  //  
+  //  
+  //-----------------------------------------------------------------------------
+  function __construct(&$form_values, &$dom, &$fedora_item)
+  {
+    $this->form_values = $form_values;
+    $this->dom = $dom;
+    $this->fedora_item = $fedora_item;
+    $this->loadDomWithExistingDatastream();
+    $this->setupXPath();
+    $this->processFormElements();
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params: 
+  // Returns:  
+  //  
+  //-----------------------------------------------------------------------------
+  private function loadDomWithExistingDatastream()
+  {
+    $tempDom = new DOMDocument();
+    $tempDom->loadXML($this->fedoraItem->get_datastream_dissemination('MODS'));
+    $this->$mods = $this->dom->importNode($tempDom->documentElement, TRUE);
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params: 
+  // Returns:  
+  //  
+  //-----------------------------------------------------------------------------
+  private function setUpXPath()
+  {
+    $this->$xpath = new DOMXPath($this->dom); // MODS.xml data access
+    $this->$xpath->registerNamespace("php", "http://php.net/xpath"); // Register the php: namespace (required)
+    $this->$xpath->registerNamespace("mods", self::$MODS_NS); // Register the mods: namespace (required)
+  }
+  //----------------------------------------------------------------------------
+  // formValueIsSet
+  // Params:
+  //  form_values - Submitted Form Values
+  //  name - Name of the form value
+  //   the MODS document before editing an existing MODS data-stream.
+  // Returns: True if the form value of name is set, false otherwise.
+  //
+  // Convenience method for determining if a form value is set.
+  //----------------------------------------------------------------------------
+  private function formValueIsSet($name)
+  {
+    return isset($this->form_values[$name]) && trim($this->form_values[$name]) != '';
+  }
+  private function find($query, $contextNode = NULL)
+  {
+    return $this->xpath-evaluate($query, $contextNode);
+  }
+  private function exists($queryResult)
+  {
+    if (is_string($queryResult)) {
+      return TRUE;
+    } 
+    else if($queryResult->length > 0) { // DomNodeList
+      return TRUE;
+    }
+    return FALSE;
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params: 
+  // Returns:  
+  //  
+  //-----------------------------------------------------------------------------
+  private function processFormElements()
+  {
+    if($this->formValueIsSet('mods_title')) {
+      $queryResult = $this->find('/mods:mods/mods:titleInfo/mods:title');
+      if($this->exists($queryResult)) { // Modify Existing
+        // We will have to include all titles in the form for this to work.
+        // So change title to a list...
+        // These nodes dont' contain any attributes so removing them completely is ok.
+        // What happens in the case where that isn't true?
+        
+      }
+      else { // Create New
+        $titleinfo = $this->dom->createElement('mods:titleInfo');
+        $title  = $this->dom->createElement('mods:title', htmlspecialchars($this->form_values['mods_title']));
+        $titleinfo->appendChild($title);
+        $this->mods->appendChild($titleinfo);
+      }
+    }
+  }
 }
 
 /******************************************************************************** 
@@ -380,6 +490,8 @@ class ModsFormBuilder extends FormBuilder
     $dom->formatOutput = TRUE;
     $modsNode = $this->modsFromForm($form_values,$dom);
     $dom->appendChild($modsNode);
+    say($dom->saveXML());
+    exit();
     $this->modifyDatastream($dom, 'MODS', 'MODS Record', 'text/xml');
     // Dublin Core
     $modsXML = $dom->saveXML($modsNode);
@@ -398,14 +510,41 @@ class ModsFormBuilder extends FormBuilder
   // 
   // Just a clean up function, returns a form object to be used as the edit form.
   //-----------------------------------------------------------------------------
-  function initEditForm()
+  function initForm($title)
   {
     $form['#multistep'] = TRUE; // used so that it triggers a form rebuild every time.
     $form['indicator2'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Edit metadata'));
+      '#title' => t($title));
     $form['pid'] = array('#type'=>'hidden','#value'=>$this->pid);      
     return $form;
+  }
+  //-----------------------------------------------------------------------------
+  // buildIngestForm
+  // Params: None 
+  // Returns: None
+  //
+  // Generates a form that repersents MODS datastream, the values from that form 
+  // will be transformed into a MODS datastream for the ingested object.
+  //-----------------------------------------------------------------------------
+  function buildIngestForm(&$form, $elements, &$form_values)
+  {
+    $form['#multistep'] = TRUE; // used so that it triggers a form rebuild every time.
+    $form['indicator2'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Ingest digital object step #2'),
+    );
+    $form_composition = new FormComposition($form['content_model_pid']['#value']);
+
+    // As we iterate through the ContentModels Ingest Form Elements,
+    // For each elementType we encounter construct using the form_composition..
+    $form['indicator2'][] = $form_composition->constructFormElement('mods:titleInfo');
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#submit' => array('fedora_repository_edit_qdc_form_submit'),
+      '#value' => 'Save Metadata');
+    $form['#cache'] = FALSE;
+    return $form;	
   }
   //-----------------------------------------------------------------------------
   // buildEditMetadataForm
@@ -421,7 +560,7 @@ class ModsFormBuilder extends FormBuilder
     if(!$shouldBuildEditForm) 
       return;
 
-    $form = $this->initEditForm();
+    $form = $this->initForm('Edit metadata');
     $contentModelFormElements = $this->contentModel->getIngestFormElements(); // Form elements to construct
     $content = $this->fedoraItem->get_datastream_dissemination('MODS'); // Actual Mods.xml data to edit    
     $dataStreamExists = trim($content) != '';
@@ -437,7 +576,7 @@ class ModsFormBuilder extends FormBuilder
       $formElement = new FormElement($contentModelFormElement, $xpath);
       $formElement->insertIntoEditForm($form);
     }
-
+    $form['#tree'] = TRUE;
     $form['submit'] = array(
       '#type' => 'submit',
       '#submit' => array('fedora_repository_edit_qdc_form_submit'),
@@ -504,7 +643,9 @@ class ModsFormBuilder extends FormBuilder
   {
     module_load_include('inc', 'fedora_repository', 'api/fedora_item');
     module_load_include('inc', 'fedora_repository', 'CollectionPolicy');
-   
+    var_dump($form_values);
+    exit();
+    
     $dom = $this->createFoxmlDocument($form_values);
     try {
       $object = Fedora_Item::ingest_from_FOXML($dom);
@@ -680,6 +821,43 @@ class ModsFormBuilder extends FormBuilder
     $test = $doc->saveXML($doc->firstChild);
     $dublinCoreFragment->appendXML($doc->saveXML($doc->firstChild));
     return $dublinCoreFragment;
+  }
+  //----------------------------------------------------------------------------
+  // formValueIsSet
+  // Params:
+  //  form_values - Submitted Form Values
+  //  name - Name of the form value
+  //   the MODS document before editing an existing MODS data-stream.
+  // Returns: True if the form value of name is set, false otherwise.
+  //
+  // Convenience method for determining if a form value is set.
+  //----------------------------------------------------------------------------
+  private function formValueIsSet(&$from_values, $name)
+  {
+    return isset($form_values[$name]) && trim($form_values[$name]) != '';
+  }
+  //----------------------------------------------------------------------------
+  // modsFromForm
+  // Params:
+  //  form_values - Submitted Form Values
+  //  dom - FOXML document to be ingested, or a temp document to store
+  //   the MODS document before editing an existing MODS data-stream.
+  // Returns: MODS document.
+  //
+  // Creates MODS document from the submitted form values.
+  //----------------------------------------------------------------------------
+  private function modsApplyChangesFromForm(&$form_values, &$dom)
+  {
+    $tempDom = new DOMDocument();
+    $tempDom->loadXML($this->fedoraItem->get_datastream_dissemination('MODS'));
+    $mods = $dom->importNode($tempDom->documentElement, TRUE);
+    $xpath = new DOMXPath($dom); // MODS.xml data access
+    $xpath->registerNamespace("php", "http://php.net/xpath"); // Register the php: namespace (required)
+    $xpath->registerNamespace("mods", self::$MODS_NS); // Register the mods: namespace (required)
+
+    if(formValueIsSet($form_values, 'mods_title')) {
+      findElement('mods:titleInfo');
+    }    
   }
   //----------------------------------------------------------------------------
   // modsFromForm

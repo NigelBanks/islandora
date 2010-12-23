@@ -113,7 +113,7 @@ function ife_autocomplete_marcrelator($collection, $string='') {
      foreach ($result as $term) {
        $termVal =$term->getElementsByTagName('prefLabel')->item(0)->nodeValue;
        $termVal = preg_replace('/\s+/', ' ', $termVal);
-       $terms[$term->getElementsByTagName('notation')->item(0)->nodeValue]= $termVal;
+       $terms[$termVal]= $termVal;
      }
      echo drupal_json($terms);
    }
