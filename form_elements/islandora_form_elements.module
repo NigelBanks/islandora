@@ -1,13 +1,24 @@
 <?php
 
+// $Id$
 
-/**
- * Implementation of hook_elements():
- * Register the duration widget with the Forms API and set default values.
+/* File: islandora_form_elements.module
+ * Author: 
+ * 
+ * Description: 
+ *
  */
-function islandora_form_elements_elements() {
 
-  
+//-------------------------------------------------------------------------------
+// islandora_form_elements_elements
+// Params: None.
+// Returns: An array of form elements types. 
+//
+// Implementation of hook_elements():
+// Register the duration widget with the Forms API and set default values.
+//-------------------------------------------------------------------------------  
+function islandora_form_elements_elements() 
+{  
   $type['fieldset'] = array(
     '#input'=> TRUE,
     '#process' => array('ife_fieldset_process'),
@@ -42,14 +53,12 @@ function islandora_form_elements_elements() {
     '#input'=>TRUE,
     '#process' => array('ife_other_select_process'),
   );
-
   
   $type['copyright'] = array(
     '#input' => TRUE,
     '#process' => array('ife_copyright_process'),
     '#element_validate' => array('ife_copyright_validate'),
-  );  
-  
+  );
   
   $type['filechooser'] = array(
     '#input' => TRUE,
@@ -94,71 +103,114 @@ function islandora_form_elements_elements() {
   );
   return $type;
 }
-
+//-------------------------------------------------------------------------------
+// ife_fieldset_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
+//-------------------------------------------------------------------------------
 function ife_fieldset_process($element,$edit,&$form_state)
 {
-//   echo 'fieldset process '. $element['#collapsible'].'<br/>';
-
-  if (isset($element['#collapsed']) && ife_fieldset_children_has_value($element))
-  {
+  if (isset($element['#collapsed']) && ife_fieldset_children_has_value($element)) {
     unset($element['#collapsed']);
   }
   return $element;
 }
-
-function ife_fieldset_children_has_value($el)
+//-------------------------------------------------------------------------------
+// ife_fieldset_children_has_value
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
+//-------------------------------------------------------------------------------
+function ife_fieldset_children_has_value($element)
 {
   $ret = false;
-  
-  
-  if ((isset($el['#default_value']) && !is_array($el['#default_value']) && trim($el['#default_value']) != '') ||
-      (isset($el['#value']) && trim($el['#value']) != ''))
-  {
+  if ((isset($element['#default_value']) && !is_array($element['#default_value']) && trim($element['#default_value']) != '') || (isset($element['#value']) && trim($element['#value']) != '')) {
     $ret = true;
-  } else
-  {
-    foreach (element_children($el) as $key)
-    {
-	
-      if (!$ret) 
-      {
-	$ret = (isset($_POST[$key]) && (is_array($_POST[$key]) || trim($_POST[$key]) != '')) || ife_fieldset_children_has_value($el[$key]);
+  } 
+  else {
+    foreach (element_children($element) as $key) {
+      if (!$ret) {
+        $ret = (isset($_POST[$key]) && (is_array($_POST[$key]) || trim($_POST[$key]) != '')) || ife_fieldset_children_has_value($element[$key]);
       }
     }
   }
-  
   return $ret;
 }
-
+//-------------------------------------------------------------------------------
+// ife_tabpanel_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
 //-------------------------------------------------------------------------------
 function ife_tabpanel_process($element,$edit,&$form_state)
 {
+  $name = $element['#name'];
   $element['#tree'] = TRUE;
-  $element['#prefix'] = '<div class="clear-block" id="ife-themeInfo-wrapper">';
+  $element['#prefix'] = '<div class="clear-block" id="ife-'.$name.'-wrapper">';
   $element['#suffix'] = '</div>';
-  $element['children']['#tree'] = TRUE;
-  $element['children']['#type'] = 'fieldset';
-  $element['add_tab'] = array(
+  $element['content']['#title'] = $element['#title'];
+  $element['content']['#theme'] = 'tabpanel_items';
+  $element['content']['#name'] = $name;
+  $element['add-tab'] = array(
     '#type' => 'submit',
     '#weight' => 4, 
     '#size' => 30,
+    '#attributes' => array('style' => 'display:none'),
+    '#value'=> t('add-' . $name),
     '#submit' => array('ife_add_tabpanel_submit'), // If no javascript action.
+    '#action' => 'add',
     '#ahah' => array(
       'path' => 'ife/tabpanel_ahah',
-      'wrapper' => 'ife-themeInfo-wrapper',
+      'wrapper' => 'ife-'.$name.'-wrapper',
       'method' => 'replace',
       'effect' => 'fade'
     ),
   );
+  $count = 1; // Can't remove the first one.
+  while($element['content'][$count]) {
+    $element['content'][$count]['remove_tab'] = array(
+    '#type' => 'submit',
+    '#weight' => 4, 
+    '#size' => 30,
+    '#attributes' => array('style' => 'display:none'),
+    '#value'=> $count,
+    '#action' => 'remove',
+    '#submit' => array('ife_remove_tabpanel_submit'), // If no javascript action.
+    '#ahah' => array(
+      'path' => 'ife/tabpanel_ahah',
+      'wrapper' => 'ife-'.$name.'-wrapper',
+      'method' => 'replace',
+      'effect' => 'fade'
+      ),
+    );
+    $count++;
+  }
   return $element;
 }
-
+//-------------------------------------------------------------------------------
+// ife_people_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
+//-------------------------------------------------------------------------------
 function ife_people_process($element,$edit,&$form_state) 
 {
   $element['#tree'] = TRUE;
   $element['#prefix'] = '<div class="clear-block" id="ife-people-wrapper">';
   $element['#suffix'] = '</div>';
-  
   $element['people'] = array(
     '#tree' => TRUE,
     '#prefix' => '<div id="ife-people">',
@@ -281,16 +333,22 @@ function ife_people_process($element,$edit,&$form_state)
     );      
    return $element;
 }
-
+//-------------------------------------------------------------------------------
+// ife_person_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
+//-------------------------------------------------------------------------------
 function ife_person_process($element)
 {
   $element['#tree'] = TRUE;
   
-  if (!isset($element['#value']))
-  {
+  if (!isset($element['#value'])) {
     $element['#value'] = array('name'=>'');
   }
-  
   
   $element['name'] = array(
     '#type' => 'textfield',
@@ -299,7 +357,6 @@ function ife_person_process($element)
     '#value' => $element['#value']['name'],
     '#description' => t('Please enter last name first, followed by a comma and first name.'),
   );
-    
 
   $element['date'] = array(
   '#type' => 'datepicker',
@@ -342,18 +399,22 @@ function ife_person_process($element)
   );
   return $element;
 }
-
-
+//-------------------------------------------------------------------------------
+// ife_org_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
+//-------------------------------------------------------------------------------
 function ife_org_process($element)
 {
   $element['#tree'] = TRUE;
   
-  if (!isset($element['#value']))
-  {
+  if (!isset($element['#value'])) {
     $element['#value'] = array('name'=>'');
   }
-  
-  
 
   $element['role'] = array(
     '#type' => 'textfield',
@@ -393,19 +454,25 @@ function ife_org_process($element)
       'effect' => 'fade',
     ),
   );
+
   return $element;
 }
-
-
+//-------------------------------------------------------------------------------
+// ife_conf_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+// 
+//-------------------------------------------------------------------------------
 function ife_conf_process($element)
 {
   $element['#tree'] = TRUE;
   
-  if (!isset($element['#value']))
-  {
+  if (!isset($element['#value'])) {
     $element['#value'] = array('name'=>'');
   }
-  
 
   $element['role'] = array(
     '#type' => 'textfield',
@@ -429,8 +496,7 @@ function ife_conf_process($element)
     '#size' => 30,
     '#value' => $element['#value']['conference'],
   );    
-  
-  
+    
   $element['date'] = array(
   '#type' => 'datepicker',
   '#title' => t('Date'),
@@ -454,266 +520,235 @@ function ife_conf_process($element)
   );
   return $element;
 }
-
-/**
- * Our process callback to expand the control.
- */
+//-------------------------------------------------------------------------------
+// ife_sticky_textfield_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Our process callback to expand the control.
+//-------------------------------------------------------------------------------
 function ife_sticky_textfield_process($element,$edit,&$form_state) 
 {
-
-  
-  if (isset($element['#sticky']) && $element['#sticky'] == TRUE)
-  {
+  if (isset($element['#sticky']) && $element['#sticky'] == TRUE) {
     $element['#type'] = 'sticky_textfield';
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
-  
-    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on')
-    {
-	$form_state['storage'][$element['#name']]=$element['#value'];
-    } elseif (isset($form_state['storage'][$element['#name']]))
-    {
+    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on') {
+      $form_state['storage'][$element['#name']]=$element['#value'];
+    } 
+    elseif (isset($form_state['storage'][$element['#name']])) {
       $element['#value'] = $form_state['storage'][$element['#name']];
       $element['#sticky_on'] = TRUE;
     }
   }
-  
   return $element;
 }
-
-/**
- * Our process callback to expand the control.
- */
+//-------------------------------------------------------------------------------
+// ife_datepicker_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Our process callback to expand the control.
+//-------------------------------------------------------------------------------
 function ife_datepicker_process($element,$edit,&$form_state) 
 {
-
-  
-  if (isset($element['#sticky']) && $element['#sticky'] == TRUE)
-  {
+  if (isset($element['#sticky']) && $element['#sticky'] == TRUE) {
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
-  
-    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on')
-    {
-	$form_state['storage'][$element['#name']]=$element['#value'];
-    } elseif (isset($form_state['storage'][$element['#name']]))
-    {
+    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on') {
+      $form_state['storage'][$element['#name']]=$element['#value'];
+    } 
+    elseif (isset($form_state['storage'][$element['#name']])) {
       $element['#value'] = $form_state['storage'][$element['#name']];
       $element['#sticky_on'] = TRUE;
     }
   }
-  
   return $element;
 }
-
-
-
-/**
- * Our process callback to expand the control.
- */
+//-------------------------------------------------------------------------------
+// ife_sticky_textarea_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Our process callback to expand the control.
+//-------------------------------------------------------------------------------
 function ife_sticky_textarea_process($element,$edit,&$form_state) 
 {
-
-  
-  if (isset($element['#sticky']) && $element['#sticky'] == TRUE)
-  {
+  if (isset($element['#sticky']) && $element['#sticky'] == TRUE) {
     $element['#type'] = 'sticky_textarea';
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
-  
-    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on')
-    {
-	$form_state['storage'][$element['#name']]=$element['#value'];
-    } elseif (isset($form_state['storage'][$element['#name']]))
-    {
+    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on') {
+      $form_state['storage'][$element['#name']]=$element['#value'];
+    }
+    elseif (isset($form_state['storage'][$element['#name']])) {
       $element['#value'] = $form_state['storage'][$element['#name']];
       $element['#sticky_on'] = TRUE;
     }
   }
-  
   return $element;
 }
-
-
-/**
- * Our process callback to expand the control.
- */
+//-------------------------------------------------------------------------------
+// ife_sticky_select_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Our process callback to expand the control.
+//-------------------------------------------------------------------------------
 function ife_sticky_select_process($element,$edit,&$form_state) 
 {
-
-  
-  if (isset($element['#sticky']) && $element['#sticky'] == TRUE)
-  {
+  if (isset($element['#sticky']) && $element['#sticky'] == TRUE) {
     $element['#type'] = 'sticky_select';
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
-  
-    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on')
-    {
-	$form_state['storage'][$element['#name']]=$element['#value'];
-    } elseif (isset($form_state['storage'][$element['#name']]))
-    {
+    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on') {
+      $form_state['storage'][$element['#name']]=$element['#value'];
+    } 
+    elseif (isset($form_state['storage'][$element['#name']])) {
       $element['#value'] = $form_state['storage'][$element['#name']];
       $element['#sticky_on'] = TRUE;
     }
   }
-  
   return $element;
 }
-
-/**
- * Our process callback to expand the control.
- */
-function ife_copyright_process($element,$edit,&$form_state) {
-
+//-------------------------------------------------------------------------------
+// ife_copyright_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Our process callback to expand the control.
+//-------------------------------------------------------------------------------
+function ife_copyright_process($element,$edit,&$form_state) 
+{
   module_load_include('inc','islandora_form_elements','includes/creative_commons');
-  
-  if (isset($element['#sticky']) && $element['#sticky'] == TRUE)
-  {
+  if (isset($element['#sticky']) && $element['#sticky'] == TRUE) {
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
-  
-    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on')
-    {
-	$form_state['storage'][$element['#name']]=$element['#value'];
-    } elseif (isset($form_state['storage'][$element['#name']]))
-    {
+    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on') {
+      $form_state['storage'][$element['#name']]=$element['#value'];
+    }
+    elseif (isset($form_state['storage'][$element['#name']])) {
       $element['#value'] = $form_state['storage'][$element['#name']];
       $element['#sticky_on'] = TRUE;
     }
   }  
-
   if ($element['#sticky']) { 
-    $path=drupal_get_path('module','islandora_form_elements');
+    $path = drupal_get_path('module','islandora_form_elements');
     drupal_add_css($path.'/css/sticky.css');
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
     $sticky = (isset($element['#sticky']) && $element['#sticky'] == TRUE?'<input class="sticky" type="checkbox" name="'.$stickyName.'"'.(isset($element['#sticky_on']) && $element['#sticky_on']==TRUE?' checked="checked"':'').'/><br/>':'');
   }
-  
   $element['#tree'] = TRUE;
-  
   if (isset($element['#value']) && !is_array($element['#value'])) {
-    $matches=array();
+    $matches = array();
     if (preg_match('/by-*([a-z]+)-*([a-z]+)\/([\d\.]+)\/([a-z]*)/',$element['#value'],$matches)) {
       $element['#value'] = array('cc_commercial' => $matches[1], 'cc_modifications' => $matches[2], 'cc_jurisdiction' => $matches[4]);  
-    } else 
-      $element['#value'] = array('cc_commercial' => '', 'cc_modifications' => '', 'cc_jurisdiction' => '');  
-  } else if (!isset($element['#value'])) {
+    } 
+    else {
+      $element['#value'] = array('cc_commercial' => '', 'cc_modifications' => '', 'cc_jurisdiction' => '');
+    }
+  } 
+  elseif (!isset($element['#value'])) {
     $element['#value'] = array('cc_commercial' => '', 'cc_modifications' => '', 'cc_jurisdiction' => '');
   }
-  
   $element['cc'] = array('#type' => 'fieldset', '#title'=>$element['#title'], '#description' => $sticky.'<div class="cc_preview">preview</div>' , '#collapsible' => TRUE);
-  
   $element['cc']['cc_enable'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use a CreativeCommons.org Licence'),
     '#attributes' => array('class' => 'cc_enable'),
     '#default_value' => TRUE,
-  );
-  
-  $element['cc']['cc_commercial'] =  array(
+                                      );
+  $element['cc']['cc_commercial'] = array(
     '#type' => 'select',
     '#title' => t('Allow commercial uses of your work?'),
     '#options' => array( ''=>'Yes', 'nc'=>'No'), 
     '#attributes' => array('class' => 'cc_field cc_commercial'),
     '#default_value' => $element['#value']['cc_commercial'],
   );
-  $element['cc']['cc_modifications'] =  array(
+  $element['cc']['cc_modifications'] = array(
     '#type' => 'select',
     '#title' => t('Allow modifications of your work?'),
     '#options' => array( ''=>'Yes', 'sa'=>'Yes, as long as others share alike', 'nd'=>'No'), 
     '#attributes' => array('class' => 'cc_field cc_modifications'),
     '#default_value' => $element['#value']['cc_modifications'],
   );
-  
-  $element['cc']['cc_jurisdiction'] =  array(
+  $element['cc']['cc_jurisdiction'] = array(
     '#type' => 'select',
     '#title' => t('Jurisdiction of your license'),
     '#options' => CreativeCommons::$cc_jurisdiction_vals,
     '#default_value' => $element['#value']['cc_jurisdiction'],
     '#attributes' => array('class' => 'cc_field cc_jurisdiction'),
   );
-  
   $element['#title'] = '';
-  
   return $element;
-  
 }
-
-
-/**
- * Our process callback to expand the control.
- */
+//-------------------------------------------------------------------------------
+// ife_list_process
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Our process callback to expand the control.
+//-------------------------------------------------------------------------------
 function ife_list_process($element,$edit,&$form_state) 
 {
   if (is_array($element['#default_value'])) {
     $element['#default_value']=join('; ',$element['#default_value']);
   }
-  
   if (is_array($element['#value'])) {
     $element['#value']=join('; ',$element['#value']);
   }  
-
   if (isset($element['#sticky']) && $element['#sticky'] == TRUE)
   {
     $stickyName = preg_replace('/\]/','',array_pop(preg_split('/\[/',$element['#name']))).'-sticky';
-  
-    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on')
-    {
-	$form_state['storage'][$element['#name']]=$element['#value'];
-    } elseif (isset($form_state['storage'][$element['#name']]))
-    {
+    if (isset($element['#post'][$stickyName]) && strtolower($element['#post'][$stickyName]) == 'on') {
+      $form_state['storage'][$element['#name']]=$element['#value'];
+    } 
+    elseif (isset($form_state['storage'][$element['#name']])) {
       $element['#value'] = $form_state['storage'][$element['#name']];
       $element['#sticky_on'] = TRUE;
     }
   }
-  
   return $element;
 }
-
-/**
- * Implementation of hook_theme().
- *
- * This lets us tell Drupal about our theme functions and their arguments.
- */
-function islandora_form_elements_theme() {
+//-------------------------------------------------------------------------------
+// islandora_form_elements_theme
+// Params:
+//  element - 
+//  edit - 
+//  form_state - 
+// Returns:
+//
+// Implementation of hook_theme().
+// This lets us tell Drupal about our theme functions and their arguments
+//-------------------------------------------------------------------------------
+function islandora_form_elements_theme() 
+{
   return array( 
-    'sticky_textfield' => array(
-      'arguments' => array('element'),
-    ),
-    'sticky_textarea' => array(
-      'arguments' => array('element'),
-    ), 
-    'sticky_select' => array(
-      'arguments' => array('element'),
-    ), 
-    'filechooser' => array(
-      'arguments' => array('element'),
-      'file' => 'includes/filechooser.inc'
-    ),
-    'list' => array(
-      'arguments' => array('element'),
-    ),
-    'other_select' => array(
-      'arguments' => array('element'),
-    ),
-    'people' => array(
-       'arguments' => array('element'),
-       'file'=> 'includes/people.inc',
-     ),
-    'people_items' => array(
-      'arguments' => array('form' => NULL),
-      'file'=> 'includes/people.inc',
-    ),
-    'datepicker' => array(
-      'arguments' => array('element'),
-    ),
-    'copyright' => array(
-      'arguments' => array('element'),
-    ),
-    'tabpanel' => array(
-      'arguments' => array('element'),
-      'file' => 'includes/tabpanel.inc',
-    ),
-    'tabpanel_items' => array(
-      'arguments' => array('form' => NULL),
-      'file'=> 'includes/people.inc',
-    ),
+    'sticky_textfield' => array('arguments' => array('element')),
+    'sticky_textarea' => array('arguments' => array('element')), 
+    'sticky_select' => array('arguments' => array('element')), 
+    'filechooser' => array('arguments' => array('element'), 'file' => 'includes/filechooser.inc'),
+    'list' => array('arguments' => array('element')),
+    'other_select' => array('arguments' => array('element')),
+    'people' => array('arguments' => array('element'), 'file'=> 'includes/people.inc'),
+    'people_items' => array('arguments' => array('form' => NULL), 'file'=> 'includes/people.inc'),
+    'datepicker' => array('arguments' => array('element')),
+    'copyright' => array('arguments' => array('element')),
+    'tabpanel' => array('arguments' => array('element'), 'file' => 'includes/tabpanel.inc'),
+    'tabpanel_items' => array('arguments' => array('form' => NULL), 'file'=> 'includes/tabpanel.inc'),
   );
 }
 
