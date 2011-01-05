@@ -1,3 +1,4 @@
+
 <?php
 
 // $Id$
@@ -10,67 +11,108 @@
  *  Allows forms to dynamically add new tabs to a tabpanel in a form.
  */
 
-// this is a bit of a hack.  It iterates through the 
-// form and assigns a dummy value to any field in the $post 
-// data that is marked as #required.  This is so that the 
-// AHAH method can still function with required fields that 
-// are first passed to the core form validation function.
-function _dummy_post_info_nigelb($form, $post, $key = '') 
-{
-  $children = element_children($form);
-  if (count($children) > 0) {
-     foreach ($children as $key) {
-       $post = _dummy_post_info($form[$key], $post, $key);
-    }
-  }
-  if ($key!='' && isset($form['#required']) && $form['#required'] == TRUE && trim($post[$key]) == '') {
-   $post[$key] = 'not empty';
-  }
-  return $post;
-}
 //-------------------------------------------------------------------------------
-// 
+// _ife_remove_tabpanel_from_form
 // Params:
+//  form - 
+//  clicked_button -
 // Returns:
 //
+//
 //-------------------------------------------------------------------------------
-function ife_find_tabpanel_element($form, &$keys = array())
-{
-  if (isset($form['#type']) && $form['#type'] == 'tabpanel') {
-    return $form;
-  } 
-  $children = element_children($form);
-  foreach ($children as $key) {
-    $found = ife_find_tabpanel_element($form[$key], $keys);
-    if ($found !== FALSE) {
-      $keys[] = $key;
-      return $found;
-    }
-  }
-  return FALSE;
-}
-function remove_tabpanel(&$form, $clicked_button) 
+function _ife_remove_tabpanel_from_form(&$form, $clicked_button) 
 {
   $parents = $clicked_button['#array_parents'];
-  $index =  $clicked_button['#value'];
+  $index =  $clicked_button['#tab'];
   $depth = count($parents) - 2;
   $point = &$form;
   for($i = 0; $i < $depth; $i++) { 
     $point = &$point[$parents[$i]];
   }
+  $content = &$point;
   $count = 1;
-  while($point[$count])
+  while($content[$count])
     $count++;
   for($i = $index; $i < $count; $i++) {
-    $point[$i] = $point[$i+1];
+    $content[$i] = $content[$i+1];
   }
-  unset($point[$count-1]);
+  unset($content[$count-1]);
 }
-function find_tabpanel_to_insert(&$form, $clicked_button)
+//-------------------------------------------------------------------------------
+// _ife_remove_tabpanel_values
+// Params:
+//  form -
+//  clicked_button -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function _ife_remove_tabpanel_values(&$form, $clicked_button) 
 {
-  $offset =  ($clicked_button['#action'] = 'remove')? 3 : 1;
+  $parents = $clicked_button['#parents'];
+  $index =  $clicked_button['#tab'];
+  $depth = count($parents) - 2;
+  $point = &$_POST;
+  for($i = 0; $i < $depth; $i++) { 
+    $point = &$point[$parents[$i]];
+  }
+  $content = &$point;
+  $count = count($content);
+  for($i = $index; $i < $count; $i++) {
+    $content[$i] = $content[$i+1];
+  }
+  unset($content[$count-1]);
+}
+//-------------------------------------------------------------------------------
+// ife_remove_tabpanel
+// Params:
+//  form - 
+//  clicked_button -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function ife_remove_tabpanel(&$form, $clicked_button) 
+{
+  _ife_remove_tabpanel_from_form(&$form, $clicked_button);
+  _ife_remove_tabpanel_values(&$form, $clicked_button);
+}
+//-------------------------------------------------------------------------------
+// ife_add_tabpanel
+// Params:
+//  form -
+//  clicked_button -
+// Returns:
+//
+// 
+//-------------------------------------------------------------------------------
+function ife_add_tabpanel(&$form, $clicked_button) 
+{
   $parents = $clicked_button['#array_parents'];
-  $index =  $clicked_button['#value'];
+  $depth = count($parents) - 1;
+  $point = &$form;
+  for($i = 0; $i < $depth; $i++) { 
+    $point = &$point[$parents[$i]];
+  }
+  $content = &$point['content'];
+  $count = 1;
+  while($content[$count])
+    $count++;
+  $content[$count] = $content[0];
+}
+//-------------------------------------------------------------------------------
+// ife_find_tabpanel_to_insert
+// Params:
+//  form - 
+//  clicked_button -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function ife_find_tabpanel_to_insert(&$form, $clicked_button)
+{
+  $offset = ($clicked_button['#action'] == 'remove')? 3 : 1;
+  $parents = $clicked_button['#array_parents'];
   $depth = count($parents) - $offset;
   $point = &$form;
   for($i = 0; $i < $depth; $i++) { 
@@ -79,10 +121,89 @@ function find_tabpanel_to_insert(&$form, $clicked_button)
   return $point;
 }
 //-------------------------------------------------------------------------------
-// 
+// is_clicked_button
 // Params:
+//  form_element - a form element.
 // Returns:
 //
+//
+//-------------------------------------------------------------------------------
+function is_clicked_button(&$form_element)
+{
+  if (isset($form_element['#input']) && $form_element['#input']) {
+    if (isset($form_element['#executes_submit_callback'])) {
+      $name = $form_element['#name'];
+      $value = $form_element['#value']; 
+      if (isset($_POST[$name]) && $_POST[$name] == $value) {
+	return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+//-------------------------------------------------------------------------------
+// ife_clicked_button
+// Params:
+//  form - 
+//  form_state -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function ife_find_clicked_button($form, $form_state)
+{
+  return _ife_find_clicked_button($form, $form_state);
+}
+//-------------------------------------------------------------------------------
+// _ife_find_clicked_button
+// Params:
+//  form - 
+//  form_state -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function _ife_find_clicked_button(&$form, &$form_state)
+{
+  // Process Form Element
+  if ((!empty($form['#type'])) && ($info = _element_info($form['#type']))) {
+    $form += $info;
+  }
+  if (isset($form['#process']) && !$form['#processed']) {
+    foreach ($form['#process'] as $process) {
+      if (function_exists($process)) {
+        $form = $process($form, isset($edit) ? $edit : NULL, $form_state, NULL);
+      }
+    }
+  }
+  // Check if its the Droid we are looking for.
+  if(is_clicked_button($form)) {
+    return $form;
+  }
+  // Repeat previous steps for children while letting them know who their parents are.
+  foreach (element_children($form) as $key) {
+    if (!isset($form[$key]['#tree'])) {
+      $form[$key]['#tree'] = $form['#tree'];
+    }
+    if (!isset($form[$key]['#parents'])) {
+      $form[$key]['#parents'] = $form[$key]['#tree'] && $form['#tree'] ? array_merge($form['#parents'], array($key)) : array($key);
+      $array_parents = isset($form['#array_parents']) ? $form['#array_parents'] : array();
+      $array_parents[] = $key;
+      $form[$key]['#array_parents'] = $array_parents;
+    }
+    // Recurse through all the elements.
+    $result = ife_find_clicked_button($form[$key], $form_state);
+    if($result != NULL)
+      return $result;
+  }
+  return NULL;
+}
+//-------------------------------------------------------------------------------
+// ife_tabpanel_ahah
+// Params: 
+// Returns:
+// 
+// 
 //-------------------------------------------------------------------------------
 function ife_tabpanel_ahah() 
 {
@@ -92,91 +213,41 @@ function ife_tabpanel_ahah()
   $form_build_id = $_POST['form_build_id'];
   if (!$form = form_get_cache($form_build_id, $form_state))
     exit();
-  $form_id = $form['#parameters'][0];
-  $form['#post'] = $_POST;
-  $form['#programmed']  = FALSE;
-  //  $form = form_builder($form_id, $form, $form_state);
-  $output = $form;
-  drupal_json(array(
-      'status'   => TRUE,
-      //'data'     => theme('status_messages') . drupal_render($output),
-      'data'     => theme('status_messages') . '<div>'.print_r($output,TRUE).'</div>',
-  ));
-  return; 
 
-  $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => $_POST);
-  $form_build_id = $_POST['form_build_id'];
-  if (!$form = form_get_cache($form_build_id, $form_state))
+  $clicked_button = ife_find_clicked_button($form, $form_state);
+  
+  switch($clicked_button['#action']) {
+  case 'remove':
+    ife_remove_tabpanel($form, $clicked_button);
+    break;
+  case 'add':
+    ife_add_tabpanel($form, $clicked_button);
+    break;
+  default:
     exit();
-  $form_id = $form['#parameters'][0];
-  $form['#post'] = $_POST;
-  $test = $form['indicator2'][0]['mods-titleInfo'];
-  drupal_process_form($form_id, $form, $form_state);
-  $clicked_button = $form_state['clicked_button'];
-  $form['indicator2'][0]['mods-titleInfo'] = $test;
-  switch($clicked_button['#action']) {
-    case 'remove':
-      remove_tabpanel($form, $clicked_button);
-      break;
-    case 'add':
-      add_tabpanel($form, $clicked_button);
-      break;
-    default:
-      exit();
   }
-  $form = form_builder($form_id, $form, $form_state);
-  $output = find_tabpanel_to_insert($form, $clicked_button);
-  unset($output['#prefix'],$output['#suffix']);
-  $javascript = drupal_add_js(NULL, NULL, 'header');
-  drupal_json(array(
-      'status'   => TRUE,
-      'data'     => theme('status_messages') . drupal_render($output),
-      //'data'     => theme('status_messages') . '<div>'.print_r($output,TRUE).'</div>',
-      'settings' => call_user_func_array('array_merge_recursive', $javascript['setting']),
-  ));
-}
-//-------------------------------------------------------------------------------
-// 
-// Params:
-// Returns:
-//
-//-------------------------------------------------------------------------------
-function ife_remove_tabpanel_submit($form, &$form_state) 
-{
-  $clicked_button = $form_state['clicked_button'];
-  switch($clicked_button['#action']) {
-    case 'remove':
-      remove_tabpanel($form, $clicked_button);
-      break;
-    case 'add':
-      add_tabpanel($form, $clicked_button);
-      break;
-  }
+
   $form_id = $form['#parameters'][0];
   $form['#post'] = $_POST;
   $form['#programmed']  = FALSE;
+  form_set_cache($form_build_id, $form, $form_state);
   $form = form_builder($form_id, $form, $form_state);
-  unset($form_state['submit_handlers']);
-  form_execute_handlers('submit', $form, $form_state);
-  $form_state['rebuild'] = FALSE;
+  $output = ife_find_tabpanel_to_insert($form, $clicked_button);
+
+  drupal_json(array(
+		    'status'   => TRUE,
+		    'data'     => theme('status_messages') . drupal_render($output),
+		    //'data'     => theme('status_messages') . '<div>'.print_r($clicked_button, TRUE).'</div>',
+		    ));
 }
 //-------------------------------------------------------------------------------
-// 
+// theme_tabpanel
 // Params:
+//  element - form element of tabpanel type.
 // Returns:
-//
-//-------------------------------------------------------------------------------
-function ife_add_tabpanel_submit($form, &$form_state) 
-{
-  unset($form_state['submit_handlers']);
-  form_execute_handlers('submit', $form, $form_state);
-  $form_state['rebuild'] = FALSE;
-}
-//-------------------------------------------------------------------------------
+//  Themed html repersenting a collection of tabs.
 // 
-// Params:
-// Returns:
-//
+// 
 //-------------------------------------------------------------------------------
 function theme_tabpanel($element) 
 {
@@ -205,6 +276,14 @@ function theme_tabpanel($element)
   drupal_add_js($js, inline);
   return '<div id=' . $name . '>'.$element['#children'].'</div>';
 }
+//-------------------------------------------------------------------------------
+// theme_tabpanel_items
+// Params:
+//  form - The parent form element to all form elements within the tabpanel.
+// Returns:
+//  Themed html repersenting all the tabpanels and the elements contained within 
+//  them.
+// 
 //-------------------------------------------------------------------------------
 function theme_tabpanel_items($form) 
 {

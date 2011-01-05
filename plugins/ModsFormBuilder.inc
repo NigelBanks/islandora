@@ -483,7 +483,7 @@ class ModsFormBuilder extends FormBuilder
   // and overwrites the MODS data-stream with the MODS.xml file. It also transforms
   // the MODS.xml into a Dublin Core data-stream.
   //-----------------------------------------------------------------------------
-  function handlEditMetadataForm(&$form_id, &$form_values, &$soap_client) 
+  function handleEditMetadataForm(&$form_id, &$form_values, &$soap_client) 
   {
     // MODS 
     $dom = new DomDocument("1.0", "UTF-8");
@@ -535,7 +535,6 @@ class ModsFormBuilder extends FormBuilder
       '#title' => t('Ingest digital object step #2'),
     );
     $form_composition = new FormComposition($form['content_model_pid']['#value']);
-
     // As we iterate through the ContentModels Ingest Form Elements,
     // For each elementType we encounter construct using the form_composition..
     $form['indicator2'][] = $form_composition->constructFormElement('mods:titleInfo');
