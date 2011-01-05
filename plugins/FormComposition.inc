@@ -237,6 +237,12 @@ class FormComposition
     return NULL; // Implement
   }
   //-----------------------------------------------------------------------------
+  // constructFormElementFromElementType
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
   private function constructFormElementFromElementType($elementType, $xpath = NULL)
   {  
     $name = $this->getAttribute('@name', $elementType);
@@ -248,15 +254,7 @@ class FormComposition
     $form_element['#xpath'] = $xpath;
     $form_element['#default_value'] = $this->getDefaultValue($elementType);
     $form_element['#options'] = $this->getOptions($elementType);
-    if($form_element['#type'] == 'tabpanel') {
-      $form_element['content'][0]['attributes'] = $this->constructFormElementFromElementTypeAttributes($elementType, $xpath);
-      $form_element['content'][0]['children'] = $this->constructFormElementsFromElementTypeChildren($elementType, $xpath);
-      $form_element['content'][1]['attributes'] = $this->constructFormElementFromElementTypeAttributes($elementType, $xpath);
-      $form_element['content'][1]['children'] = $this->constructFormElementsFromElementTypeChildren($elementType, $xpath);
-      $form_element['content'][2]['attributes'] = $this->constructFormElementFromElementTypeAttributes($elementType, $xpath);
-      $form_element['content'][2]['children'] = $this->constructFormElementsFromElementTypeChildren($elementType, $xpath);
-    }
-    if($form_element['#type'] == 'fieldset') {
+    if($form_element['#type'] == 'tabpanel' || $form_element['#type'] == 'fieldset') {
       $form_element['content'][0]['attributes'] = $this->constructFormElementFromElementTypeAttributes($elementType, $xpath);
       $form_element['content'][0]['children'] = $this->constructFormElementsFromElementTypeChildren($elementType, $xpath);
     }
