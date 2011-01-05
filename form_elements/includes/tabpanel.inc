@@ -74,8 +74,8 @@ function _ife_remove_tabpanel_values(&$form, $clicked_button)
 //-------------------------------------------------------------------------------
 function ife_remove_tabpanel(&$form, $clicked_button) 
 {
-  _ife_remove_tabpanel_from_form(&$form, $clicked_button);
-  _ife_remove_tabpanel_values(&$form, $clicked_button);
+  _ife_remove_tabpanel_from_form($form, $clicked_button);
+  _ife_remove_tabpanel_values($form, $clicked_button);
 }
 //-------------------------------------------------------------------------------
 // ife_add_tabpanel
