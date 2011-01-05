@@ -256,14 +256,7 @@ function theme_tabpanel($element)
   $scripts = drupal_add_js($path.'/js/jquery-ui-1.8.7.custom.min.js');
   unset($scripts['core']['misc/jquery.js']); // Ignore the system Jquery.
   drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.7.custom.css');
-  $name = $element['#name'];
-  $count = 1;
-  $removeFunctions = '';
-  while($element['content'][$count]) {
-    $id =  $element['content'][$count]['remove_tab']['#id'];
-    $removeFunctions .= '$("#remove-' . $name . '-'. $count .'").live("click", function() { $("#'. $id .'").trigger("mousedown"); });';
-    $count++;
-  }
+  $name = t(implode('-',$element['#array_parents']));
   $js = '$(document).ready(function() { 
         var tabs = $("#' . $name . '").tabs();
         $("#add-' . $name . '").live("click", function() { $("#' . $element['add-tab']['#id'] . '").trigger("mousedown"); });

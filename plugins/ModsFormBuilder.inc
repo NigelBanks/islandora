@@ -537,7 +537,7 @@ class ModsFormBuilder extends FormBuilder
     $form_composition = new FormComposition($form['content_model_pid']['#value']);
     // As we iterate through the ContentModels Ingest Form Elements,
     // For each elementType we encounter construct using the form_composition..
-    $form['indicator2'][] = $form_composition->constructFormElement('mods:titleInfo');
+    $form['indicator2'][] = $form_composition->constructFormElement('/mods:mods');
     $form['submit'] = array(
       '#type' => 'submit',
       '#submit' => array('fedora_repository_edit_qdc_form_submit'),

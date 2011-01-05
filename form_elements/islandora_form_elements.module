@@ -154,8 +154,8 @@ function ife_fieldset_children_has_value($element)
 //-------------------------------------------------------------------------------
 function ife_tabpanel_process($element,$edit,&$form_state)
 {
-  $name = $element['#name'];
-  $wrapper = 'ife-'. $name. '-wrapper';
+  $name = t(implode('-',$element['#array_parents'])); // Unique
+  $wrapper = 'ife-' . $name . '-wrapper';
   $element['#tree'] = TRUE;
   $element['#prefix'] = '<div class="clear-block" id="' . $wrapper . '">';
   $element['#suffix'] = '</div>';
@@ -167,7 +167,7 @@ function ife_tabpanel_process($element,$edit,&$form_state)
     '#weight' => 4, 
     '#size' => 30,
     '#attributes' => array('style' => 'display:none'),
-    '#value'=> t('ife-add-' . implode('-',$element['#array_parents'])),
+    '#value'=> t('ife-add-' . $name),
     '#action' => 'add',
     '#ahah' => array(
       'path' => 'ife/tabpanel_ahah',
@@ -183,7 +183,7 @@ function ife_tabpanel_process($element,$edit,&$form_state)
     '#weight' => 4, 
     '#size' => 30,
     '#attributes' => array('style' => 'display:none'),
-    '#value'=> t('ife-remove-' . implode('-',$element['#array_parents']) . '-' . $count),
+    '#value'=> t('ife-remove-' . $name),
     '#action' => 'remove',
     '#tab' => $count,
     '#ahah' => array(
