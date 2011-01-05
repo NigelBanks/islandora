@@ -68,7 +68,9 @@ class FormComposition
       return str_replace(array(':','/','@'), '-', $xpath . '/' . $name);
     }
     else {
-      return str_replace(array(':','/','@'), '-', $name);
+      $result = str_replace(array(':', '@'), '', $name);
+      $result = str_replace(array('/'), '-', $result);
+      return $result;
     }
   }
   //-----------------------------------------------------------------------------
@@ -254,6 +256,7 @@ class FormComposition
     $form_element['#xpath'] = $xpath;
     $form_element['#default_value'] = $this->getDefaultValue($elementType);
     $form_element['#options'] = $this->getOptions($elementType);
+    $form_element['#tree'] = TRUE;
     if($form_element['#type'] == 'tabpanel' || $form_element['#type'] == 'fieldset') {
       $form_element['content'][0]['attributes'] = $this->constructFormElementFromElementTypeAttributes($elementType, $xpath);
       $form_element['content'][0]['children'] = $this->constructFormElementsFromElementTypeChildren($elementType, $xpath);

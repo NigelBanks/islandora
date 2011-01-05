@@ -234,10 +234,14 @@ function ife_tabpanel_ahah()
   $form = form_builder($form_id, $form, $form_state);
   $output = ife_find_tabpanel_to_insert($form, $clicked_button);
 
+  unset($output['#prefix'], $ouput['#suffix']);
+  $javascript = drupal_add_js(NULL, NULL, 'header');
+  $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
+  unset($settings['ahah']['']);
   drupal_json(array(
 		    'status'   => TRUE,
 		    'data'     => theme('status_messages') . drupal_render($output),
-		    //'data'     => theme('status_messages') . '<div>'.print_r($clicked_button, TRUE).'</div>',
+		    'settings' => $settings,
 		    ));
 }
 //-------------------------------------------------------------------------------
@@ -261,10 +265,15 @@ function theme_tabpanel($element)
         var tabs = $("#' . $name . '").tabs();
         $("#add-' . $name . '").live("click", function() { $("#' . $element['add-tab']['#id'] . '").trigger("mousedown"); });
         $("#'.$name.' .ui-icon-close").live("click", function() { 
-           var index = $(this).text();
-           var id = "#'.$name.'-" + index;
-           $(id).children(":last").trigger("mousedown"); });
-        $("body").ajaxComplete(function() { var tabs = $("#' . $name . '").tabs(); });
+           var id = $(this).text();
+           $("#"+id).trigger("mousedown");
+        });
+        $("body").ajaxComplete(function(event, request, settings) {
+           var tabs = $("#' . $name . '").tabs(); 
+           var response = eval("(" + request.responseText + ")");
+           jQuery.extend(Drupal.settings, response.settings);
+           Drupal.attachBehaviors();
+        });
   });';
   drupal_add_js($js, inline);
   return '<div id=' . $name . '>'.$element['#children'].'</div>';
@@ -282,11 +291,30 @@ function theme_tabpanel_items($form)
 {
   $name = $form['#name'];
   $title = $form['#title'];
-  $output = '<ul>';
+  $count = 1;
+  /*$output = '<script type="text/javascript"><!--//--><![CDATA[//><!--';
+  while($form[$count]) {
+    // Add javascript
+    $js = 'jQuery.extend(Drupal.settings, { 
+          "ahah": { 
+            "'. $form[$count]['remove-tab']['#id'] .'": {
+              "url": "/ife/tabpanel_ahah", "event": "mousedown", "keypress": true, 
+              "wrapper": "ife-indicator2-0--modsmods-content-0-children-modstitleInfo-wrapper", 
+              "selector": "#edit--modsmods-content-0-children-modstitleInfo-add-tab", 
+              "effect": "fade", "method": "replace", 
+              "progress": { "type": "throbber" }, 
+              "button": { "op": "ife-add-indicator2-0--modsmods-content-0-children-modstitleInfo" } 
+            }
+          }});';
+    $output .= $js . "\n";
+    $count++;
+  }
+  $output .= '//--><!]]></script>'; */
+  $output .= '<ul>';
   $output .= '<li><a href="#' . $name . '-0">' . $title . '</a><span id="add-' . $name . '" class="ui-icon ui-icon-circle-plus" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;"></span></li>';
   $count = 1;
   while($form[$count]) {
-    $output .= '<li><a href="#' . $name . '-'.$count.'">' . $count . '</a><span id="remove-' . $name . '-'. $count .'" class="ui-icon ui-icon-close" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">'.$count.'</span></li>';
+    $output .= '<li><a href="#' . $name . '-'.$count.'">' . $count . '</a><span id="remove-' . $name . '-'. $count .'" class="ui-icon ui-icon-close" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">'. $form[$count]['remove-tab']['#id'] .'</span></li>';
     $count++;
   }
   $output .= '</ul>';
@@ -297,5 +325,24 @@ function theme_tabpanel_items($form)
     $output .= '</div>';
     $count++;
   }
+  $count = 1;
+  /*  while($form[$count]) {
+    // Add javascript
+    $js = '$(document).ready(function() {
+        jQuery.extend(Drupal.settings, { 
+          "ahah": { 
+            "'. $form[$count]['remove-tab']['#id'] .'": {
+              "url": "/ife/tabpanel_ahah", "event": "mousedown", "keypress": true, 
+              "wrapper": "ife-indicator2-0--modsmods-content-0-children-modstitleInfo-wrapper", 
+              "selector": "#edit--modsmods-content-0-children-modstitleInfo-add-tab", 
+              "effect": "fade", "method": "replace", 
+              "progress": { "type": "throbber" }, 
+              "button": { "op": "ife-add-indicator2-0--modsmods-content-0-children-modstitleInfo" } 
+            }
+          }
+        })});';
+    drupal_add_js($js, inline);
+    $count++;
+    }*/
   return $output;
 }
