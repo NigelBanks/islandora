@@ -62,16 +62,12 @@ class FormComposition
     return array( $form_element_name, $form_element );
   }
   //-----------------------------------------------------------------------------
-  private function getFormElementName($name, $xpath = NULL)
+  private function getFormElementName($name)
   {
-    if($xpath && FALSE) {
-      return str_replace(array(':','/','@'), '-', $xpath . '/' . $name);
-    }
-    else {
-      $result = str_replace(array(':', '@'), '', $name);
-      $result = str_replace(array('/'), '-', $result);
-      return $result;
-    }
+    if(!$name) return '0'; // In cases were a tabpanel or fieldset repersents a single element.
+    $result = str_replace(array(':', '@'), '', $name);
+    $result = str_replace(array('/'), '-', $result);
+    return $result;
   }
   //-----------------------------------------------------------------------------
   private function getUniqueNode($xpath, $domNode = NULL)
@@ -179,7 +175,7 @@ class FormComposition
     for($i = 0; $i < $attributeList->length; $i++) { 
       $attribute = $attributeList->item($i);
       $attributeName = $this->getAttribute("@name", $attribute);
-      $formElementName = $this->getFormElementName($attributeName, $xpath);
+      $formElementName = $this->getFormElementName($attributeName);
       $form_element[$formElementName] = $this->constructFormElementFromAttribute($attributeList->item($i), $xpath);
     }
     // Each Attribute Group Reference 
@@ -199,7 +195,7 @@ class FormComposition
     for($i = 0; $i < $attributeList->length; $i++) { 
       $attribute = $attributeList->item($i);
       $attributeName = $this->getAttribute("@name", $attribute);
-      $formElementName = $this->getFormElementName($attributeName, $xpath);
+      $formElementName = $this->getFormElementName($attributeName);
       $form_element[$formElementName] = $this->constructFormElementFromAttribute($attribute, $xpath);
     }
     // Each Attribute Group Reference 
@@ -220,7 +216,7 @@ class FormComposition
     for($i = 0; $i < $elementTypeList->length; $i++) { 
       $elementType = $elementTypeList->item($i);
       $elementTypeName = $this->getAttribute("@name", $elementType);
-      $formElementName = $this->getFormElementName($elementTypeName, $xpath);
+      $formElementName = $this->getFormElementName($elementTypeName);
       $form_element[$formElementName] = $this->constructFormElementFromElementType($elementType, $xpath);
     }
     // Each ElementTypeRef
@@ -228,7 +224,7 @@ class FormComposition
     for($j = 0; $j < $elementTypeRefList->length; $j++) { 
       $elementTypeName = $elementTypeRefList->item($j)->textContent;
       $elementType = $this->getElementTypeByName($elementTypeName);
-      $formElementName = $this->getFormElementName($elementTypeName, $xpath);
+      $formElementName = $this->getFormElementName($elementTypeName);
       $form_element[$formElementName] = $this->constructFormElementFromElementType($elementType, $xpath);
     }
     return $form_element;
