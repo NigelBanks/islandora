@@ -117,6 +117,43 @@ function ife_remove_tabpanel(&$form, $clicked_button)
   _ife_remove_tabpanel_values($form, $clicked_button);
 }
 //-------------------------------------------------------------------------------
+// ife_remove_added_tabpanels
+// Params:
+//  form -
+//  clicked_button -
+// Returns:
+//
+// 
+//-------------------------------------------------------------------------------
+function ife_remove_added_tabpanels(&$content)
+{
+  $count = ife_count_tabpanels($content);
+  for($i = 1; $i < $count; $i++) {
+    unset($content[$i]);
+  }
+}
+//-------------------------------------------------------------------------------
+// ife_prune_extra_tabpanels
+// Params:
+//  form -
+//  clicked_button -
+// Returns:
+//
+// 
+//-------------------------------------------------------------------------------
+function ife_prune_extra_tabpanels(&$tabpanel)
+{
+  $children = &$tabpanel['children']; 
+  foreach (element_children($children) as $key) { // Find child tabpanels
+    $type = $children[$key]['#type'];
+    if(isset($children[$key]['content'])) {
+      $content = &$children[$key]['content'];
+      ife_remove_added_tabpanels($content);
+      ife_prune_extra_tabpanels($content[0]);
+    }
+  }
+}
+//-------------------------------------------------------------------------------
 // ife_add_tabpanel
 // Params:
 //  form -
@@ -130,6 +167,7 @@ function ife_add_tabpanel(&$form, $clicked_button)
   $content = &ife_get_tabpanel_content($form, $clicked_button);
   $count = ife_count_tabpanels($content);
   $content[$count] = $content[0];
+  ife_prune_extra_tabpanels($content[$count]);
 }
 //-------------------------------------------------------------------------------
 // ife_find_tabpanel_to_insert
