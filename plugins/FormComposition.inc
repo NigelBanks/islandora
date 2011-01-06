@@ -59,7 +59,7 @@ class FormComposition
     $elementType = $this->getElementTypeByName($name);
     $form_element = $this->constructFormElementFromElementType($elementType, NULL); 
     $form_element_name = $this->getFormElementName($this->getAttribute('@name', $elementType));
-    return array( $form_element_name => $form_element );
+    return array( $form_element_name, $form_element );
   }
   //-----------------------------------------------------------------------------
   private function getFormElementName($name, $xpath = NULL)
