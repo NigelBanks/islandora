@@ -162,7 +162,7 @@ function ife_tabpanel_process($element,$edit,&$form_state)
   $element['content']['#title'] = $element['#title'];
   $element['content']['#theme'] = 'tabpanel_items';
   $element['content']['#name'] = $name;
-  $element['add-tab'] = array(
+  $element['content'][0]['add-tab'] = array(
     '#type' => 'submit',
     '#weight' => 4, 
     '#size' => 30,

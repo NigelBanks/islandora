@@ -12,6 +12,59 @@
  */
 
 //-------------------------------------------------------------------------------
+// ife_get_tabpanel_values
+// Params:
+//  clicked_button -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function &ife_get_tabpanel_values($clicked_button)
+{
+  $parents = $clicked_button['#parents'];  
+  $depth = count($parents) - 2;
+  $point = &$_POST;
+  for($i = 0; $i < $depth; $i++) { 
+    $point = &$point[$parents[$i]];
+  }
+  return $point;
+}
+//-------------------------------------------------------------------------------
+// ife_get_tabpanel_content
+// Params:
+//  form - 
+//  clicked_button -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function &ife_get_tabpanel_content(&$form, $clicked_button)
+{
+  $parents = $clicked_button['#parents'];
+  $depth = count($parents) - 2; // The button element and the tab its under decreases the depth by 2
+  $point = &$form;
+  for($i = 0; $i < $depth; $i++) { 
+    $point = &$point[$parents[$i]];
+  }
+  return $point;
+}
+//-------------------------------------------------------------------------------
+// ife_count_tabpanels
+// Params:
+//  form - 
+//  clicked_button -
+// Returns:
+//
+//
+//-------------------------------------------------------------------------------
+function ife_count_tabpanels(&$content)
+{
+  $count = 1;
+  while($content[$count])
+    $count++;
+  return $count;
+}
+//-------------------------------------------------------------------------------
 // _ife_remove_tabpanel_from_form
 // Params:
 //  form - 
@@ -22,17 +75,9 @@
 //-------------------------------------------------------------------------------
 function _ife_remove_tabpanel_from_form(&$form, $clicked_button) 
 {
-  $parents = $clicked_button['#array_parents'];
+  $content = &ife_get_tabpanel_content($form, $clicked_button);
+  $count = ife_count_tabpanels($content);
   $index =  $clicked_button['#tab'];
-  $depth = count($parents) - 2;
-  $point = &$form;
-  for($i = 0; $i < $depth; $i++) { 
-    $point = &$point[$parents[$i]];
-  }
-  $content = &$point;
-  $count = 1;
-  while($content[$count])
-    $count++;
   for($i = $index; $i < $count; $i++) {
     $content[$i] = $content[$i+1];
   }
@@ -49,15 +94,9 @@ function _ife_remove_tabpanel_from_form(&$form, $clicked_button)
 //-------------------------------------------------------------------------------
 function _ife_remove_tabpanel_values(&$form, $clicked_button) 
 {
-  $parents = $clicked_button['#parents'];
-  $index =  $clicked_button['#tab'];
-  $depth = count($parents) - 2;
-  $point = &$_POST;
-  for($i = 0; $i < $depth; $i++) { 
-    $point = &$point[$parents[$i]];
-  }
-  $content = &$point;
+  $content = ife_get_tabpanel_values($clicked_button);
   $count = count($content);
+  $index =  $clicked_button['#tab'];
   for($i = $index; $i < $count; $i++) {
     $content[$i] = $content[$i+1];
   }
@@ -88,16 +127,8 @@ function ife_remove_tabpanel(&$form, $clicked_button)
 //-------------------------------------------------------------------------------
 function ife_add_tabpanel(&$form, $clicked_button) 
 {
-  $parents = $clicked_button['#array_parents'];
-  $depth = count($parents) - 1;
-  $point = &$form;
-  for($i = 0; $i < $depth; $i++) { 
-    $point = &$point[$parents[$i]];
-  }
-  $content = &$point['content'];
-  $count = 1;
-  while($content[$count])
-    $count++;
+  $content = &ife_get_tabpanel_content($form, $clicked_button);
+  $count = ife_count_tabpanels($content);
   $content[$count] = $content[0];
 }
 //-------------------------------------------------------------------------------
@@ -111,7 +142,7 @@ function ife_add_tabpanel(&$form, $clicked_button)
 //-------------------------------------------------------------------------------
 function ife_find_tabpanel_to_insert(&$form, $clicked_button)
 {
-  $offset = ($clicked_button['#action'] == 'remove')? 3 : 1;
+  $offset = ($clicked_button['#action'] == 'remove')? 3 : 3;
   $parents = $clicked_button['#array_parents'];
   $depth = count($parents) - $offset;
   $point = &$form;
@@ -262,21 +293,24 @@ function theme_tabpanel($element)
   drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.7.custom.css');
   $name = t(implode('-',$element['#array_parents']));
   $js = '$(document).ready(function() { 
-        var tabs = $("#' . $name . '").tabs();
-        $("#add-' . $name . '").live("click", function() { $("#' . $element['add-tab']['#id'] . '").trigger("mousedown"); });
-        $("#'.$name.' .ui-icon-close").live("click", function() { 
+        var tabs = $(".action-expand-tab").tabs({collapsible: true});
+        $(".ui-icon-circle-plus").live("click", function() { 
+           var id = $(this).text();
+           $("#"+id).trigger("mousedown");
+        });
+        $(".ui-icon-close").live("click", function() { 
            var id = $(this).text();
            $("#"+id).trigger("mousedown");
         });
         $("body").ajaxComplete(function(event, request, settings) {
-           var tabs = $("#' . $name . '").tabs(); 
+           var tabs = $(".action-expand-tab").tabs({collapsible: true}); 
            var response = eval("(" + request.responseText + ")");
            jQuery.extend(Drupal.settings, response.settings);
            Drupal.attachBehaviors();
         });
   });';
   drupal_add_js($js, inline);
-  return '<div id=' . $name . '>'.$element['#children'].'</div>';
+  return '<div id=' . $name . ' class="action-expand-tab">'.$element['#children'].'</div>';
 }
 //-------------------------------------------------------------------------------
 // theme_tabpanel_items
@@ -292,26 +326,8 @@ function theme_tabpanel_items($form)
   $name = $form['#name'];
   $title = $form['#title'];
   $count = 1;
-  /*$output = '<script type="text/javascript"><!--//--><![CDATA[//><!--';
-  while($form[$count]) {
-    // Add javascript
-    $js = 'jQuery.extend(Drupal.settings, { 
-          "ahah": { 
-            "'. $form[$count]['remove-tab']['#id'] .'": {
-              "url": "/ife/tabpanel_ahah", "event": "mousedown", "keypress": true, 
-              "wrapper": "ife-indicator2-0--modsmods-content-0-children-modstitleInfo-wrapper", 
-              "selector": "#edit--modsmods-content-0-children-modstitleInfo-add-tab", 
-              "effect": "fade", "method": "replace", 
-              "progress": { "type": "throbber" }, 
-              "button": { "op": "ife-add-indicator2-0--modsmods-content-0-children-modstitleInfo" } 
-            }
-          }});';
-    $output .= $js . "\n";
-    $count++;
-  }
-  $output .= '//--><!]]></script>'; */
   $output .= '<ul>';
-  $output .= '<li><a href="#' . $name . '-0">' . $title . '</a><span id="add-' . $name . '" class="ui-icon ui-icon-circle-plus" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;"></span></li>';
+  $output .= '<li><a href="#' . $name . '-0">' . $title . '</a><span id="add-' . $name . '" class="ui-icon ui-icon-circle-plus" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">'.$form[0]["add-tab"]['#id'].'</span></li>';
   $count = 1;
   while($form[$count]) {
     $output .= '<li><a href="#' . $name . '-'.$count.'">' . $count . '</a><span id="remove-' . $name . '-'. $count .'" class="ui-icon ui-icon-close" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">'. $form[$count]['remove-tab']['#id'] .'</span></li>';
@@ -326,23 +342,5 @@ function theme_tabpanel_items($form)
     $count++;
   }
   $count = 1;
-  /*  while($form[$count]) {
-    // Add javascript
-    $js = '$(document).ready(function() {
-        jQuery.extend(Drupal.settings, { 
-          "ahah": { 
-            "'. $form[$count]['remove-tab']['#id'] .'": {
-              "url": "/ife/tabpanel_ahah", "event": "mousedown", "keypress": true, 
-              "wrapper": "ife-indicator2-0--modsmods-content-0-children-modstitleInfo-wrapper", 
-              "selector": "#edit--modsmods-content-0-children-modstitleInfo-add-tab", 
-              "effect": "fade", "method": "replace", 
-              "progress": { "type": "throbber" }, 
-              "button": { "op": "ife-add-indicator2-0--modsmods-content-0-children-modstitleInfo" } 
-            }
-          }
-        })});';
-    drupal_add_js($js, inline);
-    $count++;
-    }*/
   return $output;
 }
