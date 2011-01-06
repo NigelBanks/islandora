@@ -533,7 +533,7 @@ class ModsFormBuilder extends FormBuilder
     $form_composition = new FormComposition($form['content_model_pid']['#value']);
     // As we iterate through the ContentModels Ingest Form Elements,
     // For each elementType we encounter construct using the form_composition..
-    list($form_element_name, $form_element) = $form_composition->constructFormElement('mods:language');
+    list($form_element_name, $form_element) = $form_composition->constructFormElement('mods:titleInfo');
     $form[$form_element_name] = $form_element;
     $form['submit'] = array(
       '#type' => 'submit',

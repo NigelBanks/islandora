@@ -704,6 +704,7 @@ function ife_copyright_process($element,$edit,&$form_state)
 //-------------------------------------------------------------------------------
 function ife_list_process($element,$edit,&$form_state) 
 {
+  $element['#attributes'] = array('class' => 'list');
   if (is_array($element['#default_value'])) {
     $element['#default_value']=join('; ',$element['#default_value']);
   }
@@ -790,7 +791,16 @@ function theme_list($element)
 {
   $path = drupal_get_path('module','islandora_form_elements');
   drupal_add_js($path.'/js/jquery.tag.editor-min.js');
-  drupal_add_js('$(document).ready(function () { $(\'#'.$element['#id'].'\').tagEditor({   separator: \';\', confirmRemoval: false, completeOnBlur: true }); }); ', 'inline');
+  drupal_add_js($path.'/js/list.js');
+  /*
+  $js = "$(document).ready(function () { 
+   $('#".$element['#id']."').tagEditor( {
+   separator: ';', 
+	 confirmRemoval: false,
+	 completeOnBlur: true,
+   });
+   });";*/
+  drupal_add_js($js, 'inline');
   drupal_add_css($path.'/css/list.css');
   $output .= '';
   
