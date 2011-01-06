@@ -288,29 +288,10 @@ function theme_tabpanel($element)
 {
   global $base_url;
   $path = drupal_get_path('module','islandora_form_elements');
-  $scripts = drupal_add_js($path.'/js/jquery-ui-1.8.7.custom.min.js');
-  unset($scripts['core']['misc/jquery.js']); // Ignore the system Jquery.
+  drupal_add_js($path.'/js/jquery-ui-1.8.7.custom.min.js');
+  drupal_add_js($path.'/js/tabpanel_ahah.js');
   drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.7.custom.css');
-  $name = t(implode('-',$element['#array_parents']));
-  $js = '$(document).ready(function() { 
-        var tabs = $(".action-expand-tab").tabs({collapsible: true});
-        $(".ui-icon-circle-plus").live("click", function() { 
-           var id = $(this).text();
-           $("#"+id).trigger("mousedown");
-        });
-        $(".ui-icon-close").live("click", function() { 
-           var id = $(this).text();
-           $("#"+id).trigger("mousedown");
-        });
-        $("body").ajaxComplete(function(event, request, settings) {
-           var tabs = $(".action-expand-tab").tabs({collapsible: true}); 
-           var response = eval("(" + request.responseText + ")");
-           jQuery.extend(Drupal.settings, response.settings);
-           Drupal.attachBehaviors();
-        });
-  });';
-  drupal_add_js($js, inline);
-  return '<div id=' . $name . ' class="action-expand-tab">'.$element['#children'].'</div>';
+  return '<div id=' . t(implode('-',$element['#array_parents'])) . ' class="action-expand-tab">'.$element['#children'].'</div>';
 }
 //-------------------------------------------------------------------------------
 // theme_tabpanel_items
