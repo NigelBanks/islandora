@@ -48,27 +48,83 @@ class FormComposition
     $this->xpath->registerNamespace("php", "http://php.net/xpath"); // Register the php: namespace (required)
   }
   //-----------------------------------------------------------------------------
-  // processFormComposition
+  // 
   // Params:
   // Returns:
   //
-  // Builds an in memory repersentation of the <form_composition> element.
+  // 
   //-----------------------------------------------------------------------------
-  public function constructFormElement($name)
+  public function getFormElement($name)
   {
-    $elementType = $this->getElementTypeByName($name);
-    $form_element = $this->constructFormElementFromElementType($elementType, NULL); 
-    $form_element_name = $this->getFormElementName($this->getAttribute('@name', $elementType));
-    return array( $form_element_name, $form_element );
+    $elementTypeNode = $this->getElementTypeNode($name);
+    return $this->getElementType($elementTypeNode);
   }
   //-----------------------------------------------------------------------------
-  private function getFormElementName($name)
+  // 
+  // Params:
+  // Returns:
+  //
+  // 
+  //-----------------------------------------------------------------------------
+  private function evaluate($xpath, $context, $value = NULL)
   {
-    if(!$name) return '0'; // In cases were a tabpanel or fieldset repersents a single element.
-    $result = str_replace(array(':', '@'), '', $name);
-    $result = str_replace(array('/'), '-', $result);
+    $result = $this->xpath->evaluate($xpath, $context);
+    if(!$result || is_string($result)) {
+      return $result;
+    }
+    $count = $result->length;
+    for($i = 0; $i < $count; $i++) {
+      $node = $result->item($i);
+      if($value) {
+	$array[] = $node->$value;
+      }
+      else {
+	$array[] = $node;
+      }
+    }
+    return $array;
+  }
+  //-----------------------------------------------------------------------------
+  // 
+  // Params:
+  // Returns:
+  //
+  // 
+  //-----------------------------------------------------------------------------
+  private function mapNodesTo($key, $value, $xpath, $context)
+  {
+    $nodeArray = $this->evaluate($xpath, $context);
+    if(is_array($nodeArray)) {
+      $count = count($nodeArray);
+      foreach($nodeArray as $node) {
+	$array[$node->$key] = $node->$value;
+      }
+    }
+    return $array;
+  }
+  //-----------------------------------------------------------------------------
+  // 
+  // Params:
+  // Returns:
+  //
+  // 
+  //-----------------------------------------------------------------------------
+  private function formatNameForFormElement($name)
+  {
+    $result = trim($name);
+    $result = str_replace(array('/', '@'), '', $result);
+    $length = strlen($result);
+    $index = strpos($result, ':');
+    if($index !== FALSE)
+      $result = substr($result, $index+1, $length - $index -1);
     return $result;
   }
+  //-----------------------------------------------------------------------------
+  // 
+  // Params:
+  // Returns:
+  //
+  // 
   //-----------------------------------------------------------------------------
   private function getUniqueNode($xpath, $domNode = NULL)
   {
@@ -83,36 +139,29 @@ class FormComposition
     return $result->item(0);
   }
   //-----------------------------------------------------------------------------
-  private function getAttribute($name, $domNode)
-  {
-    $attrNode = $this->getUniqueNode($name, $domNode);
-    if($attrNode) return $attrNode->value;
-    else return '';
-  }
-  //-----------------------------------------------------------------------------
-  // processFormComposition
+  // 
   // Params:
   // Returns:
   //
-  // Builds an in memory repersentation of the <form_composition> element.
+  // 
   //-----------------------------------------------------------------------------
-  private function getElementTypeByName($name)
+  private function getElementTypeNode($name, $context = NULL)
   {
-    // TODO allow searching child elements for the particular elementType.
-    $xpath = "/form_composition/elementTypes/elementType[@name='$name']";
-    return $this->getUniqueNode($xpath);
+    if(!$context) {
+      $xpath = "/form_composition/elementTypes/elementType[@name='$name']";
+      return $this->getUniqueNode($xpath);
+    }
+    else {
+      $xpath = "/children/elementType[@name='$name']";
+      return $this->getUniqueNode($xpath, $context);
+    }
   }
   //-----------------------------------------------------------------------------
-  //
+  // 
   // Params:
   // Returns:
   //
-  //-----------------------------------------------------------------------------
-  private function getAttributeGroupByName($name)
-  {
-    $xpath = "/form_composition/attributeGroups/attributeGroup[@name='$name']";
-    return $this->getUniqueNode($xpath);
-  }
+  // 
   //-----------------------------------------------------------------------------
   private function getDescription($element)
   {
@@ -121,142 +170,194 @@ class FormComposition
     else return '';
   }
   //-----------------------------------------------------------------------------
-  private function getParentElementType($elementType)
-  {
-    $node = $this->getUniqueNode("../..", $elementType);
-    if($node && nodeName == "elementType") return $node;
-    else return NULL;
-  }
+  // 
+  // Params:
+  // Returns:
+  //
+  // 
   //-----------------------------------------------------------------------------
-  private function getAttributes($elementType)
+  private function getOptions(&$node)
   {
-    return $this->getUniqueNode("attributes", $elementType);
-  }
-  //-----------------------------------------------------------------------------
-  private function getChildren($elementType)
-  {
-    return $this->getUniqueNode("children", $elementType);
-  }
-  //-----------------------------------------------------------------------------
-  private function getOptions($element)
-  {
-    $options = $this->getUniqueNode("options", $element);
-    if(!$options) return NULL;
-    $result = $this->xpath->evaluate("option", $options);
-    $values = NULL;
-    for($i=0; $i < $result->length; $i++) {
-      $values[$i] = $result->item($i)->textContent;
+    if(!$optionsNode = $this->getUniqueNode("options", $node)) {
+      return NULL;
     }
-    return $values;
+    return $this->evaluate('option', $optionsNode, 'textContent');
   }
   //-----------------------------------------------------------------------------
-  private function constructFormElementFromAttribute($attribute, $xpath)
-  {
-    $form_element['#title'] = $this->getAttribute("@label", $attribute);
-    $form_element['#required'] = $this->getAttribute("@required", $attribute);
-    $form_element['#type'] = $this->getAttribute("@type", $attribute);
-    $form_element['#xpath'] = $xpath . '/' . $this->getAttribute('@name', $attribute);
-    $form_element['#description'] = $this->getDescription($attribute);
-    $form_element['#options'] = $this->getOptions($attribute);
-    // Todo VALIDATION 
-    return $form_element;
-  }
-  //-----------------------------------------------------------------------------
-  private function constructFormElementFromElementTypeAttributes($elementType, $xpath)
-  {
-    $attributes = $this->getAttributes($elementType);
-    if(!$attributes) return NULL;
-    $form_element['#title'] = 'Attributes';
-    $form_element['#type'] = 'fieldset';
-    $form_element['#collapsible'] = TRUE;
-    $form_element['#collapsed'] = TRUE;
-    // Each Attribute
-    $attributeList = $this->xpath->evaluate("attribute", $attributes);
-    for($i = 0; $i < $attributeList->length; $i++) { 
-      $attribute = $attributeList->item($i);
-      $attributeName = $this->getAttribute("@name", $attribute);
-      $formElementName = $this->getFormElementName($attributeName);
-      $form_element[$formElementName] = $this->constructFormElementFromAttribute($attributeList->item($i), $xpath);
-    }
-    // Each Attribute Group Reference 
-    $attributeGroupReferences = $this->xpath->evaluate("attributeGroupRef", $attributes);
-    for($i = 0; $i < $attributeGroupReferences->length; $i++) { 
-      $attributeGroupReferenceName = $attributeGroupReferences->item($i)->textContent;
-      $attributeGroup = $this->getAttributeGroupByName($attributeGroupReferenceName);
-      $this->constructFormElementsFromAttributeGroup($attributeGroup, $form_element, $xpath); 
-    }
-    return $form_element;
-  }
-  //-----------------------------------------------------------------------------
-  private function constructFormElementsFromAttributeGroup($attributeGroup, &$form_element, $xpath)
-  {
-    // Each Attribute
-    $attributeList = $this->xpath->evaluate("attribute", $attributeGroup);
-    for($i = 0; $i < $attributeList->length; $i++) { 
-      $attribute = $attributeList->item($i);
-      $attributeName = $this->getAttribute("@name", $attribute);
-      $formElementName = $this->getFormElementName($attributeName);
-      $form_element[$formElementName] = $this->constructFormElementFromAttribute($attribute, $xpath);
-    }
-    // Each Attribute Group Reference 
-    $attributeGroupReferences = $this->xpath->evaluate("attributeGroupRef", $attributeGroup);
-    for($i = 0; $i < $attributeGroupReferences->length; $i++) { 
-      $attributeGroupReferenceName = $attributeGroupReferences->item($i)->textContent;
-      $attributeGroup = $this->getAttributeGroupByName($attributeGroupReferenceName);
-      $this->constructFormElementsFromAttributeGroup($attributeGroup, $form_element, $xpath);
-    }
-  }
-  //-----------------------------------------------------------------------------
-  private function constructFormElementsFromElementTypeChildren($elementType, $xpath)
-  {
-    $children = $this->getChildren($elementType);
-    if(!$children) return NULL;
-    // Each ElementType
-    $elementTypeList = $this->xpath->evaluate("elementType", $children);
-    for($i = 0; $i < $elementTypeList->length; $i++) { 
-      $elementType = $elementTypeList->item($i);
-      $elementTypeName = $this->getAttribute("@name", $elementType);
-      $formElementName = $this->getFormElementName($elementTypeName);
-      $form_element[$formElementName] = $this->constructFormElementFromElementType($elementType, $xpath);
-    }
-    // Each ElementTypeRef
-    $elementTypeRefList = $this->xpath->evaluate("elementTypeRef", $children);
-    for($j = 0; $j < $elementTypeRefList->length; $j++) { 
-      $elementTypeName = $elementTypeRefList->item($j)->textContent;
-      $elementType = $this->getElementTypeByName($elementTypeName);
-      $formElementName = $this->getFormElementName($elementTypeName);
-      $form_element[$formElementName] = $this->constructFormElementFromElementType($elementType, $xpath);
-    }
-    return $form_element;
-  }
-  //-----------------------------------------------------------------------------
-  private function getDefaultValue($element)
-  {
-    return NULL; // Implement
-  }
-  //-----------------------------------------------------------------------------
-  // constructFormElementFromElementType
+  // 
   // Params:
   // Returns:
   //
   //
   //-----------------------------------------------------------------------------
-  private function constructFormElementFromElementType($elementType, $xpath = NULL)
+  private function getElementType(&$node)
   {  
-    $name = $this->getAttribute('@name', $elementType);
-    $xpath = ($xpath) ? $xpath . '/' . $name : $name;
-    $form_element['#title'] = $this->getAttribute("@label", $elementType);
-    $form_element['#required'] = $this->getAttribute("@required", $elementType);
-    $form_element['#type'] = $this->getAttribute("@type", $elementType);
-    $form_element['#description'] = $this->getDescription($elementType);
-    $form_element['#xpath'] = $xpath;
-    $form_element['#default_value'] = $this->getDefaultValue($elementType);
-    $form_element['#options'] = $this->getOptions($elementType);
-    $form_element['#tree'] = TRUE;
-    if($form_element['#type'] == 'tabpanel' || $form_element['#type'] == 'fieldset') {
-      $form_element['content'][0]['attributes'] = $this->constructFormElementFromElementTypeAttributes($elementType, $xpath);
-      $form_element['content'][0]['children'] = $this->constructFormElementsFromElementTypeChildren($elementType, $xpath);
+    list($name, $form) = $this->createForm($node);
+    if($this->hasContent($form)) {
+      $form['content'][0] = $this->getContent($node);
     }
-    return $form_element;
+    return array($name => $form);
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function createForm(&$node)
+  {
+    $attributes = $this->mapNodesTo('name', 'value', '@*', $node);
+    $name = $this->formatNameForFormElement($attributes["name"]);
+    return array($name, array(
+	          '#title' => $attributes["label"],
+		  '#required' => $attributes["required"],
+		  '#type' => $attributes["type"],
+		  '#description' => $this->getDescription($node),
+		  '#default_value' => $attributes["value"],
+		  '#options' => $this->getOptions($node),
+		  '#tree' => TRUE,
+		  '#form_composition_attributes' => $attributes,
+    ));
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function hasContent(&$form)
+  {
+    $type = $form['#type'];
+    return $type == 'tabpanel' || $type == 'fieldset';
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //----------------------------------------------------------------------------
+  private function getContent(&$node) 
+  {
+    $childrenNode = $this->getUniqueNode('children', $node);
+    return array(
+		 '#form_composition_attribute' => $this->mapNodesTo('name', 'value', '@*', $childrenNode),
+		 'attributes' => $this->getAttributes($node),
+		 'children' => $this->getChildren($node),
+		 );
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //---------------------------------------------------------------------------
+  private function getAttributes(&$node)
+  {
+    if(!$attributesNode = $this->getUniqueNode('attributes', $node))
+      return NULL;
+    $form = array(
+		  '#title' => 'Attributes',
+		  '#type' => 'fieldset',
+		  '#collapsible' => TRUE,
+		  '#collapsed' => TRUE,
+		  );
+    $form = array_merge($form, $this->getEachAttribute($attributesNode));
+    return array_merge($form, $this->getEachAttributeFromGroupReference($attributesNode));
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function getEachAttribute(&$node)
+  {
+    $form = array();
+    if(!$attributeNodes = $this->evaluate('attribute', $node)) {
+      return $form;
+    }
+    foreach($attributeNodes as $attributeNode) {
+      list($name, $value) = $this->createForm($attributeNode);
+      $form[$name] = $value;
+    }
+    return $form;
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function getEachAttributeFromGroupReference(&$node)
+  {
+    $form = array();
+    if(!$attributeGroupReferences = $this->evaluate('attributeGroupRef', $node, 'textContent')) {
+      return $form;
+    }
+    foreach($attributeGroupReferences as $name) {
+      $xpath = "/form_composition/attributeGroups/attributeGroup[@name='$name']";
+      $attributeGroupNode = $this->getUniqueNode($xpath);
+      $form = array_merge($form, $this->getEachAttribute($attributeGroupNode));
+      $form = array_merge($form, $this->getEachAttributeFromGroupReference($attributeGroupNode));
+    }
+    return $form;
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function getChildren(&$elementTypeNode)
+  {
+    if(!$childrenNode = $this->getUniqueNode('children', $elementTypeNode))
+      return NULL;
+    $form = $this->getEachElementType($childrenNode);
+    return array_merge($form, $this->getEachElementTypeRef($childrenNode));
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function getEachElementType(&$childrenNode)
+  {
+    $form = array();
+    if(!$elementTypeNodes = $this->evaluate("elementType", $childrenNode)) {
+      return $form;
+    }
+    foreach($elementTypeNodes as $elementTypeNode) {
+      $form = array_merge($form, $this->getElementType($elementTypeNode));
+    }
+    return $form;
+  }
+  //-----------------------------------------------------------------------------
+  //
+  // Params:
+  // Returns:
+  //
+  //
+  //-----------------------------------------------------------------------------
+  private function getEachElementTypeRef(&$childrenNode)
+  {
+    $form = array();
+    if(!$elementTypeReferences = $this->evaluate('elementTypeRef', $childrenNode, 'textContent')) {
+      return $form;
+    }
+    foreach($elementTypeReferences as $name) {
+      $xpath = "/form_composition/elementTypes/elementType[@name='$name']";
+      $elementTypeNode = $this->getUniqueNode($xpath);
+      $form = array_merge($form, $this->getElementType($elementTypeNode));
+    }
+    return $form;
   }
 }

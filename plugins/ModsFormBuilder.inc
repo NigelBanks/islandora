@@ -26,7 +26,78 @@ module_load_include('inc', 'fedora_repository', 'plugins/FormBuilder');
 //-------------------------------------------------------------------------------
 function say($a)
 {
+  if(is_bool($a)) {
+    $a = $a ? 'true' : 'false';
+  }
   echo '<div>'. print_r($a, true) .'</div>';
+}
+
+/******************************************************************************** 
+ * Class: ModsDocument
+ *
+ * Description: 
+ *
+ *******************************************************************************/
+class ModsDocument extends DOMDocument
+{
+  private $form_values = NULL;
+  const root_form_element = 'mods';
+  //-----------------------------------------------------------------------------
+  function __construct(&$form_values)
+  {
+    parent::__construct();
+    $this->form_values = $form_values;
+    $this->form = &$this->getForm();
+    $this->createModsDocumentFromForm();
+  }
+  //-----------------------------------------------------------------------------
+  private function &getForm()
+  {
+    $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => $_POST);
+    $form_build_id = $this->form_values['form_build_id'];
+    if (!$form = form_get_cache($form_build_id, $form_state))
+       exit();
+    return $form;
+  }
+  //-----------------------------------------------------------------------------
+  private function createModsDocumentFromForm() 
+  {
+    $content = &$this->form_values[ModsDocument::root_form_element]['content'];
+    $form_element = &$this->form[ModsDocument::root_form_element];
+    $this->recurseElements($this, $form_element, $content);
+    // Correct the root elements attributes
+    $root = $this->documentElement;
+    $root->setAttribute('version', '3.0');
+    $root->setAttribute('xmlns:xlink', "http://www.w3.org/1999/xlink");
+    $root->setAttribute('xmlns:mods', "http://www.loc.gov/mods/v3");
+    $root->setAttribute('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance");
+    $root->setAttribute('xsi:schemaLocation', "http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-0.xsd");
+  }
+  //-----------------------------------------------------------------------------
+  private function recurseElements($parentElement, $form_element, $content)
+  {
+    $element_name = $this->getElementName($form_element);
+    $element = $this->createElement($element_name);
+    $element = $parentElement->appendChild($element); // TODO only append if children have values...
+    foreach($content as $index => $form_value) {
+      $content_form_element = $form_element['content'][$index];
+      foreach($form_value['attributes'] as $name => $attribute) {
+	if($attribute != NULL) {
+	  $element->setAttribute($name, $attribute);
+	}
+      }
+      foreach($form_value['children'] as $name => $child) {
+	$child_form_element = $content_form_element['children'][$name];
+	if(is_array($child) && isset($child['content'])) {
+	  $this->recurseElements($element, $child_form_element, $child['content']);
+	} 
+	else if ($child != NULL) {
+	  $name = $this->getElementNameFromXPath($child_form_element['#xpath']);
+	  $element->appendChild($this->createElement($element_name, $child));
+	}
+      }
+    }
+  }
 }
 
 /******************************************************************************** 
@@ -533,7 +604,7 @@ class ModsFormBuilder extends FormBuilder
     $form_composition = new FormComposition($form['content_model_pid']['#value']);
     // As we iterate through the ContentModels Ingest Form Elements,
     // For each elementType we encounter construct using the form_composition..
-    list($form_element_name, $form_element) = $form_composition->constructFormElement('mods:titleInfo');
+    $form = array_merge($form, $form_composition->getFormElement('/mods:mods'));
     $form[$form_element_name] = $form_element;
     $form['submit'] = array(
       '#type' => 'submit',
@@ -541,6 +612,91 @@ class ModsFormBuilder extends FormBuilder
       '#value' => 'Save Metadata');
     $form['#cache'] = FALSE;
     return $form;	
+  }
+  //-----------------------------------------------------------------------------
+  // handleIngestForm
+  // Params:
+  //  form_values - Submitted Form Values
+  // Returns: none
+  // 
+  // Handle submission of ingest form. Creates FOXML document representing the
+  // submitted form values, and ingests the FOXML document. 
+  //-----------------------------------------------------------------------------
+  function handleIngestForm($form_values)
+  {
+    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
+    module_load_include('inc', 'fedora_repository', 'CollectionPolicy');
+    $dom = $this->createFoxmlDocument($form_values);
+    IngestFoxmlDocument($dom, $form_values['ingest-file-location']);
+  }
+  //-----------------------------------------------------------------------------
+  // createFoxmlDocument
+  // Params:
+  //  form_values - Submitted form values.
+  // Returns: FOXML document
+  // 
+  // Creates foxml document to be ingested. Creates and populates datastreams
+  // based on the values submitted in the form.
+  //-----------------------------------------------------------------------------
+  private function createFoxmlDocument(&$form_values)
+  {
+    $dom = new DomDocument("1.0", "UTF-8");
+    $dom->formatOutput = TRUE;
+    $pid = $form_values['pid'];
+    $rootElement = $dom->createElement("foxml:digitalObject");
+    $attributes = array(
+      'VERSION' => '1.1',
+      'PID' => "$pid",
+      'xmlns:foxml' => 'info:fedora/fedora-system:def/foxml#',
+      'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+      'xsi:schemaLocation' => 'info:fedora/fedora-system:def/foxml# http://www.fedora.info/definitions/1/0/foxml1-1.xsd');
+    foreach($attributes as $key => $val) {
+      $rootElement->setAttribute($key, $val);
+    }
+    $dom->appendChild($rootElement);
+
+    // Add default values as specified by FormBuilder.inc
+    $form_values['dc:title'] = $form_values['mods_title'];
+    $this->createStandardFedoraStuff($form_values, $dom, $rootElement);
+    $this->createRelationShips($form_values, $dom, $rootElement);
+    
+    $collectionPid = $form_values['collection_pid'];
+    if (($cp = CollectionPolicy::LoadFromCollection($collectionPid)) !== FALSE) {
+      $collectionName = trim($cp->getName()); 
+      if (trim($collectionName) != '') {
+        $form_values['dc_relation'] = $collectionName;
+      }
+    } 
+    if (!empty($form_values['ingest-file-location'])) {
+      $this->createFedoraDataStreams($form_values, $dom, $rootElement);
+    }
+    // Done within this class.
+    $this->createPolicy($collectionPid, $dom, $rootElement);
+    $this->createModsStream($form_values, $dom, $rootElement);
+    $this->createCollectionPolicy($form_values, $dom, $rootElement);    
+    $this->createWorkflowStream($form_values, $dom, $rootElement);
+    return $dom;
+  }
+  //-----------------------------------------------------------------------------
+  function IngestFoxmlDocument($dom, $ingestFileLocation)
+  {
+    try {
+      $object = Fedora_Item::ingest_from_FOXML($dom);
+      if (!empty($object->pid)) {
+        drupal_set_message(t("Item !pid created successfully.", array('!pid' => l($object->pid, 'fedora/repository/'. $object->pid))), "status");
+      }
+      if (!empty( $_SESSION['fedora_ingest_files'])) {
+        foreach ($_SESSION['fedora_ingest_files'] as $dsid => $createdFile) {
+          file_delete($createdFile);
+        }
+      }
+      file_delete($ingestFileLocation); // TODO: Investigate. Only On success? What happens in other cases?
+    }
+    catch (exception $e) {
+      drupal_set_message(t('Error ingesting object: !e', array('!e' => $e->getMessage())), 'error');
+      watchdog(t("Fedora_Repository"), t("Error ingesting object: !e", array('!e' => $e->getMessage())), NULL, WATCHDOG_ERROR);
+      return;
+    }
   }
   //-----------------------------------------------------------------------------
   // buildEditMetadataForm
@@ -578,88 +734,6 @@ class ModsFormBuilder extends FormBuilder
       '#submit' => array('fedora_repository_edit_qdc_form_submit'),
       '#value' => 'Save Metadata');
     return $form;	
-  }
-  //-----------------------------------------------------------------------------
-  // createFoxmlDocument
-  // Params:
-  //  form_values - Submitted form values.
-  // Returns: FOXML document
-  // 
-  // Creates foxml document to be ingested. Creates and populates datastreams
-  // based on the values submitted in the form.
-  //-----------------------------------------------------------------------------
-  private function createFoxmlDocument(&$form_values)
-  {
-    $dom = new DomDocument("1.0", "UTF-8");
-    $dom->formatOutput = TRUE;
-    $pid = $form_values['pid'];
-    $rootElement = $dom->createElement("foxml:digitalObject");
-    $attributes = array(
-      'VERSION' => '1.1',
-      'PID' => "$pid",
-      'xmlns:foxml' => 'info:fedora/fedora-system:def/foxml#',
-      'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-      'xsi:schemaLocation' => 'info:fedora/fedora-system:def/foxml# http://www.fedora.info/definitions/1/0/foxml1-1.xsd');
-    foreach($attributes as $key => $val) {
-      $rootElement->setAttribute($key, $val);
-    }
-    $dom->appendChild($rootElement);
-
-    // Add default values as specified by FormBuilder.inc
-    $form_values['dc:title'] = $form_values['mods_title'];
-    $this->createStandardFedoraStuff($form_values, $dom, $rootElement);
-    $this->createRelationShips($form_values, $dom, $rootElement);
-    $collectionPid = $form_values['collection_pid'];
-    if (($cp = CollectionPolicy::LoadFromCollection($collectionPid)) !== FALSE) {
-      $collectionName = trim($cp->getName()); 
-      if (trim($collectionName) != '') {
-        $form_values['dc_relation'] = $collectionName;
-      }
-    } 
-    if (!empty($form_values['ingest-file-location'])) {
-      $this->createFedoraDataStreams($form_values, $dom, $rootElement);
-    }
-    // Done within this class.
-    $this->createPolicy($collectionPid, $dom, $rootElement);
-    $this->createModsStream($form_values, $dom, $rootElement);
-    $this->createCollectionPolicy($form_values, $dom, $rootElement);    
-    $this->createWorkflowStream($form_values, $dom, $rootElement);
-    return $dom;
-  }
-  //-----------------------------------------------------------------------------
-  // handleIngestForm
-  // Params:
-  //  form_values - Submitted Form Values
-  // Returns: none
-  // 
-  // Handle submission of ingest form. Creates FOXML document representing the
-  // submitted form values, and ingests the FOXML document. 
-  //-----------------------------------------------------------------------------
-  function handleIngestForm($form_values)
-  {
-    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
-    module_load_include('inc', 'fedora_repository', 'CollectionPolicy');
-    var_dump($form_values);
-    exit();
-    
-    $dom = $this->createFoxmlDocument($form_values);
-    try {
-      $object = Fedora_Item::ingest_from_FOXML($dom);
-      if (!empty($object->pid)) {
-        drupal_set_message(t("Item !pid created successfully.", array('!pid' => l($object->pid, 'fedora/repository/'. $object->pid))), "status");
-      }
-      if (!empty( $_SESSION['fedora_ingest_files'])) {
-        foreach ($_SESSION['fedora_ingest_files'] as $dsid => $createdFile) {
-          file_delete($createdFile);
-        }
-      }
-      file_delete($form_values['ingest-file-location']);
-    }
-    catch (exception $e) {
-      drupal_set_message(t('Error ingesting object: !e', array('!e' => $e->getMessage())), 'error');
-      watchdog(t("Fedora_Repository"), t("Error ingesting object: !e", array('!e' => $e->getMessage())), NULL, WATCHDOG_ERROR);
-      return;
-    }
   }
   //-----------------------------------------------------------------------------
   // createDatastream
@@ -766,15 +840,18 @@ class ModsFormBuilder extends FormBuilder
     $attributes = array('ID' => 'MODS', 'STATE' => 'A', 'CONTROL_GROUP' => 'X');
     $versionAttributes = array('ID' => 'MODS.0', 'LABEL' => 'MODS Record', 'MIMETYPE' => 'text/xml');
     list($datastream, $content) = $this->createDatastream($dom, $attributes, $versionAttributes);
-    $mods = $this->modsFromForm($form_values, $dom);
-    $content->appendChild($mods);
+    $mods = new ModsDocument($form_values);
+    say(htmlentities($mods->saveXML()));
+    exit();
+    $node = $dom->importNode($mods->documentElement, TRUE);
+    $content->appendChild($node);
     $rootElement->appendChild($datastream);
     $this->createDublinCoreDatastream($mods, $dom, $rootElement);
   }
   //----------------------------------------------------------------------------
   // createDublinCoreDatastream
   // Params:
-  //  modsNode - MODS document. Stored as a node within the dom.
+  //  mods - ModsDocument, created from the form.
   //  dom - FOXML document to be ingested
   //  rootElement - Root element in the FOXML document.
   // Returns: None.
@@ -782,12 +859,12 @@ class ModsFormBuilder extends FormBuilder
   // Transforms a MODS document into a Dublin Core document, and appends it
   // to the FOXML documents root element.
   //----------------------------------------------------------------------------
-  private function createDublinCoreDatastream($modsNode, &$dom, &$rootElement)
+  private function createDublinCoreDatastream(&$mods, &$dom, &$rootElement)
   {
     $attributes = array('ID' => 'DC', 'STATE' => 'A', 'CONTROL_GROUP' => 'X');
     $versionAttributes = array('ID' => 'DC.0', 'LABEL' => 'Dublin Core Record', 'MIMETYPE' => 'text/xml');
     list($datastream, $content) = $this->createDatastream($dom, $attributes, $versionAttributes);
-    $dublinCoreNode = $this->transformModsToDublinCore($dom->saveXML($modsNode), $dom);
+    $dublinCoreNode = $this->transformModsToDublinCore($mods->saveXML(), $dom);
     $content->appendChild($dublinCoreNode);
     $rootElement->appendChild($datastream);
   }
