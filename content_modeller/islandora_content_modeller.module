@@ -1,13 +1,24 @@
 <?php
 
+// $Id$
 
+/* File: islandora_form_elements.module
+ * Author: 
+ * 
+ * Description: 
+ *
+ */
 
-
+//-------------------------------------------------------------------------------
+// islandora_content_modeller_menu
+// Params: None.
+// Returns:
+//
+//-------------------------------------------------------------------------------  
 function islandora_content_modeller_menu()
 {
-
   $items=array();
-  
+
   $items['admin/content/modeller'] = array(
        'title' => 'Islandora Content Modeller',
        'description' => 'Manage Islandora/Fedora Content Models',
@@ -67,7 +78,12 @@ function islandora_content_modeller_menu()
 
   return $items;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_get_modules()
 {
   $files = module_rebuild_cache();
@@ -83,7 +99,12 @@ function icm_get_modules()
   return $options;
 
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_pluginFiles()
 {
   
@@ -111,7 +132,12 @@ function icm_ajax_pluginFiles()
   }
   exit();
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_getClasses()
 {
   echo '<option></option>';
@@ -142,7 +168,12 @@ function icm_ajax_getClasses()
   }
   exit();    
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_getMethods()
 {
   echo '<option></option>';
@@ -171,7 +202,12 @@ function icm_ajax_getMethods()
   }
   exit();    
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_model_list()
 {
     global $base_url;
@@ -209,7 +245,12 @@ function icm_ajax_model_list()
     
     echo $modelTree->buildTree('filetree');      
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_model_tree()
 {
   global $base_url;
@@ -407,7 +448,12 @@ function icm_ajax_model_tree()
 
   exit();
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_collection_tree()
 {
   global $base_url;
@@ -515,8 +561,12 @@ function icm_ajax_collection_tree()
 
   exit();
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function islandora_content_modeller_main()
 {
   global $base_url;
@@ -548,7 +598,12 @@ function islandora_content_modeller_main()
 
   return $content;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_formExists($formName)
 {
   $validForms = array('icm_collection_new','icm_collection_edit','icm_collection_purge','icm_model_new','icm_model_purge','icm_model_edit_ingestForm','icm_model_add_mime','icm_collection_add_term','icm_collection_add_cmodel','icm_model_add_ingestMethodParam','icm_model_add_ingestMethod','icm_model_add_ingestRule','icm_model_add_appliesTo',
@@ -556,7 +611,12 @@ function icm_ajax_formExists($formName)
   'icm_model_edit_adddsmeth','icm_model_service_add');
   return in_array($formName,$validForms);
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_processForm($formName)
 {
   $params=null;
@@ -574,7 +634,12 @@ function icm_ajax_processForm($formName)
     echo $formContent;
   }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_ajax_button()
 {
 
@@ -1152,9 +1217,12 @@ function icm_ajax_button()
   }
 
 }
-
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_mime_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1174,7 +1242,12 @@ function icm_model_add_mime_validate($form,&$form_state)
     exit();
   }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_mime(&$form_state,$params=null)
 {
 
@@ -1208,7 +1281,12 @@ function icm_model_add_mime(&$form_state,$params=null)
   return $form;
 
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_add_cmodel_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1246,7 +1324,12 @@ function icm_collection_add_cmodel_validate($form,&$form_state)
     }
   }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_add_cmodel(&$form_state,$params=null)
 {
 
@@ -1305,7 +1388,12 @@ function icm_collection_add_cmodel(&$form_state,$params=null)
   return $form;
 
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_add_term_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1325,7 +1413,12 @@ function icm_collection_add_term_validate($form,&$form_state)
     exit();
   }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_add_term(&$form_state,$params=null)
 {
 
@@ -1367,8 +1460,12 @@ function icm_collection_add_term(&$form_state,$params=null)
   return $form;
 
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_rollback_validate($form,&$form_state)
 {
  //only proceed if no errors have been found.
@@ -1429,7 +1526,12 @@ function icm_collection_rollback_validate($form,&$form_state)
      
    }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_rollback(&$form_state,$params=null)
 {
 
@@ -1507,7 +1609,12 @@ function icm_collection_rollback(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestMethodParam_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1538,8 +1645,12 @@ function icm_model_add_ingestMethodParam_validate($form,&$form_state)
    }
    
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestMethodParam(&$form_state,$params=null)
 {
   
@@ -1620,8 +1731,12 @@ function icm_model_add_ingestMethodParam(&$form_state,$params=null)
    
    return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestElementParam_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1648,8 +1763,12 @@ function icm_model_add_ingestElementParam_validate($form,&$form_state)
    }
    
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestElementParam(&$form_state,$params=null)
 {
   if (is_array($params))
@@ -1693,7 +1812,12 @@ function icm_model_add_ingestElementParam(&$form_state,$params=null)
    
    return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestMethod_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1756,7 +1880,12 @@ function icm_model_add_ingestMethod_validate($form,&$form_state)
    }
   
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestMethod(&$form_state,$params=null)
 {
 
@@ -1834,7 +1963,12 @@ function icm_model_add_ingestMethod(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_appliesTo_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1858,7 +1992,12 @@ function icm_model_add_appliesTo_validate($form,&$form_state)
    form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
   }  
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_appliesTo(&$form_state,$params=null)
 {
 
@@ -1893,8 +2032,12 @@ function icm_model_add_appliesTo(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestRule_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -1955,9 +2098,12 @@ function icm_model_add_ingestRule_validate($form,&$form_state)
    }
   
 }
-
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestRule(&$form_state,$params=null)
 {
 
@@ -2041,8 +2187,12 @@ function icm_model_add_ingestRule(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ds_validate($form,&$form_state)
 {
   module_load_include('inc', 'fedora_repository', 'ContentModel');
@@ -2073,7 +2223,12 @@ function icm_model_add_ds_validate($form,&$form_state)
    }
   
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ds(&$form_state,$params=null)
 {
 
@@ -2115,8 +2270,12 @@ function icm_model_add_ds(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_dispmeth_validate($form,&$form_state)
 {
     //only proceed if no errors have been found.
@@ -2175,7 +2334,12 @@ function icm_model_add_dispmeth_validate($form,&$form_state)
      form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
    }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_dispmeth(&$form_state,$params=null)
 {
 
@@ -2235,8 +2399,12 @@ function icm_model_add_dispmeth(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_edit_ingestForm_validate($form,&$form_state)
 {
   module_load_include('inc', 'fedora_repository', 'ContentModel');
@@ -2297,7 +2465,12 @@ function icm_model_edit_ingestForm_validate($form,&$form_state)
      form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
    }  
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_edit_ingestForm(&$form_state,$params=null)
 {
 
@@ -2420,8 +2593,12 @@ function icm_model_edit_ingestForm(&$form_state,$params=null)
   
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_edit_adddsmeth_validate($form,&$form_state)
 {
   module_load_include('inc', 'fedora_repository', 'ContentModel');
@@ -2482,7 +2659,12 @@ function icm_model_edit_adddsmeth_validate($form,&$form_state)
      form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
    }  
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_edit_adddsmeth(&$form_state,$params=null)
 {
 
@@ -2581,8 +2763,12 @@ function icm_model_edit_adddsmeth(&$form_state,$params=null)
   
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestFormElement_validate($form,&$form_state)
 {
 
@@ -2636,7 +2822,12 @@ function icm_model_add_ingestFormElement_validate($form,&$form_state)
      form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
    }     
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_ingestFormElement(&$form_state,$params=null)
 {
   if (is_array($params))
@@ -2722,8 +2913,12 @@ function icm_model_add_ingestFormElement(&$form_state,$params=null)
   
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_edit_ingestFormElement_validate($form,&$form_state)
 {
 
@@ -2778,7 +2973,12 @@ function icm_model_edit_ingestFormElement_validate($form,&$form_state)
      form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
    }     
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_edit_ingestFormElement(&$form_state,$params=null)
 {
   if (is_array($params))
@@ -2897,8 +3097,12 @@ function icm_model_edit_ingestFormElement(&$form_state,$params=null)
     
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_authListItem_validate($form,&$form_state)
 {
 
@@ -2940,9 +3144,12 @@ function icm_model_add_authListItem_validate($form,&$form_state)
      form_set_error('',t('Error: Unable to load content model <b>%cm_pid</b>.',array('%cm_pid'=>htmlentities($form_state['values']['form']['model_pid']))));
    }     
 }
-
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_add_authListItem(&$form_state,$params=null)
 {
   if (is_array($params))
@@ -3024,9 +3231,12 @@ function icm_model_add_authListItem(&$form_state,$params=null)
     
   return $form;
 }
-
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_update_editMetadataMethod_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -3092,7 +3302,12 @@ function icm_model_update_editMetadataMethod_validate($form,&$form_state)
    }
   
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_update_editMetadataMethod(&$form_state,$params=null)
 {
 
@@ -3187,8 +3402,12 @@ function icm_model_update_editMetadataMethod(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_rollback_validate($form,&$form_state)
 {
  //only proceed if no errors have been found.
@@ -3249,7 +3468,12 @@ function icm_model_rollback_validate($form,&$form_state)
      
    }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_rollback(&$form_state,$params=null)
 {
 
@@ -3327,7 +3551,12 @@ function icm_model_rollback(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_purge_validate($form,&$form_state)
 {
   
@@ -3362,7 +3591,12 @@ function icm_model_purge_validate($form,&$form_state)
     
   }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_purge(&$form_state,$params=null)
 {
   
@@ -3402,7 +3636,12 @@ function icm_model_purge(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_new_submit($form,&$form_state)
 {
   
@@ -3476,7 +3715,12 @@ function icm_model_new_submit($form,&$form_state)
       
     }  
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_new_validate($form, &$form_state)
 {
   module_load_include('inc', 'fedora_repository', 'ContentModel');
@@ -3542,7 +3786,12 @@ function icm_model_new_validate($form, &$form_state)
   } 
   
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_model_new(&$form_state,$params=null)
 {
   $form['#multistep']= TRUE;
@@ -3764,9 +4013,12 @@ function icm_model_new(&$form_state,$params=null)
   
   return $form;
 }
-
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_purge_validate($form,&$form_state)
 {
   
@@ -3800,7 +4052,12 @@ function icm_collection_purge_validate($form,&$form_state)
     
   }
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_purge(&$form_state,$params=null)
 {
   
@@ -3840,7 +4097,12 @@ function icm_collection_purge(&$form_state,$params=null)
   $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id'=>'cancel');
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_new_submit($form,&$form_state)
 {
   
@@ -3915,7 +4177,12 @@ function icm_collection_new_submit($form,&$form_state)
     
   }  
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_new_validate($form, &$form_state)
 {
   module_load_include('inc', 'fedora_repository', 'CollectionPolicy');
@@ -3967,7 +4234,12 @@ function icm_collection_new_validate($form, &$form_state)
   } 
   
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_new(&$form_state,$params=null)
 {
   $form['#multistep']= TRUE;
@@ -4154,8 +4426,12 @@ function icm_collection_new(&$form_state,$params=null)
   
   return $form;
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_edit_validate($form,&$form_state)
 {
   //only proceed if no errors have been found.
@@ -4179,8 +4455,12 @@ function icm_collection_edit_validate($form,&$form_state)
     }
   }
 }
-
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_collection_edit(&$form_state,$params=null)
 {
  
@@ -4239,7 +4519,12 @@ function icm_collection_edit(&$form_state,$params=null)
 
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function /*icm*/_model_service_add(&$form_state,$params=null)
 {
   
@@ -4311,7 +4596,12 @@ function /*icm*/_model_service_add(&$form_state,$params=null)
   
   return $form;
 }
-
+//-------------------------------------------------------------------------------
+//
+// Params:
+// Returns:
+//
+//-------------------------------------------------------------------------------
 function icm_display_rawXml(&$form_state,$params=null)
 {
   

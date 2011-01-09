@@ -276,6 +276,7 @@
 			</xsd:element>
 			<xsd:element minOccurs="0" name="options" type="optionsType"/>
 			<xsd:element minOccurs="0" name="validateFunction" type="xsd:normalizedString"/>
+			<xsd:element minOccurs="0" name="formControls" type="formControlsType"/>
 		</xsd:sequence>
 		<xsd:attribute name="label" type="xsd:normalizedString" use="required"/>
 		<xsd:attribute name="name" type="xsd:normalizedString" use="required"/>
@@ -303,5 +304,20 @@
 				</xsd:union>
 			</xsd:simpleType>
 		</xsd:attribute>
+	</xsd:complexType>
+	<xsd:complexType name="formControlsType">
+		<xsd:sequence>
+			<xsd:element name="formControl" type="formControlType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:simpleType name="newSimpleType">
+		<xsd:restriction base="xsd:string"/>
+	</xsd:simpleType>
+	<xsd:complexType name="formControlType">
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="name" type="xsd:string"/>
+			</xsd:extension>
+		</xsd:simpleContent>
 	</xsd:complexType>
 </xsd:schema>
