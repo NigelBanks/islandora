@@ -228,8 +228,8 @@ function ife_people_process($element,$edit,&$form_state)
       }
     } 
     $json = json_decode($form_state['post'][$element['#name']]['add_from_repository']);
+    $form_state['post'][$element['#name']]['add_from_repository'] = ''; // clear so that if the form is processed multiple times, it does not add twice.
     $person=array();
-    // ob_start(); echo '<pre>'; var_dump($json); echo '</pre>'; drupal_set_message(ob_get_contents()); ob_end_clean();
     switch ($json->type) {
       case 'personal':
         $person['name']=$json->name;

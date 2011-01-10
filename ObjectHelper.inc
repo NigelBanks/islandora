@@ -54,12 +54,27 @@ class ObjectHelper {
       return ' ';
     }
 
-
     if (!fedora_repository_access(OBJECTHELPER :: $OBJECT_HELPER_VIEW_FEDORA, $pid, $user)) {
       drupal_set_message(t("You do not have access Fedora objects within the attempted namespace."), 'error');
       drupal_access_denied();
       return ' ';
     } 
+
+    
+    if (variable_get('fedora_object_restrict_datastreams', FALSE) == TRUE ) {    
+      if (($cm = ContentModel::loadFromObject($pid)) == FALSE) {
+	drupal_set_message(t("You do not have access to objects without an Islandora Content Model."), 'error');
+	drupal_access_denied();
+	return ' ';
+      }
+
+      $cmDatastreams = $cm->listDatastreams();
+      if ( !((isset($user) && in_array('administrator',$user->roles)) || in_array($dsID,$cmDatastreams))) {
+	drupal_set_message(t("You do not have access to the specified datastream."), 'error');
+	drupal_access_denied();
+	return ' ';
+      }
+    }
 
     module_load_include('inc', 'fedora_repository', 'api/fedora_item');
     $item = new Fedora_Item($pid);
@@ -391,11 +406,12 @@ class ObjectHelper {
    *
    */
   function get_formatted_datastream_list($object_pid, $contentModels, &$fedoraItem) {
-    global $fedoraUser, $fedoraPass, $base_url;
+    global $fedoraUser, $fedoraPass, $base_url, $user;
     module_load_include('inc', 'fedora_repository', 'ConnectionHelper');
     module_load_include('inc', 'fedora_repository', 'ObjectHelper');
     module_load_include('inc', 'fedora_repository', 'api/fedora_item');
-
+    module_load_include('inc', 'fedora_repository', 'ContentModel');
+    
     $path = drupal_get_path('module', 'fedora_repository');
     $dataStreamBody = '';
     $fedoraItem = new Fedora_Item($object_pid);
@@ -412,21 +428,29 @@ class ObjectHelper {
       $hasOBJStream = NULL;
       $hasTNStream = FALSE;
       $dataStreamBody = "<br /><table>\n";
+      
+      $cmDatastreams = array();
+      if (variable_get('fedora_object_restrict_datastreams', FALSE) == TRUE && ($cm = ContentModel::loadFromObject($object_pid)) !== FALSE) {
+				$cmDatastreams = $cm->listDatastreams();
+      }
 
       $dataStreamBody .= $this->get_parent_objects_asHTML($object_pid);
       $dataStreamBody .= '<tr><th colspan="4"><h3>' . t("!text", array('!text' => $availableDataStreamsText)) . '</h3></th></tr>';
       foreach ($object as $datastream) {
         foreach ($datastream as $datastreamValue) {
-          if ($datastreamValue->ID == 'OBJ') {
-            $hasOBJStream = '1';
-            $mainStreamLabel = $datastreamValue->label;
-            $mainStreamLabel = str_replace("_", " ", $mainStreamLabel);
-          }
-          if ($datastreamValue->ID == 'TN') {
-            $hasTNStream = TRUE;
-          }
-          //create the links to each datastream
-          $dataStreamBody .= $this->create_link_for_ds($object_pid, $datastreamValue); //"<tr><td><b>$key :</b></td><td>$value</td></tr>\n";
+          
+	  if (variable_get('fedora_object_restrict_datastreams', FALSE) == FALSE  ||  ((isset($user) && in_array('administrator',$user->roles)) || in_array($datastreamValue->ID,$cmDatastreams))) {
+	    if ($datastreamValue->ID == 'OBJ') {
+	      $hasOBJStream = '1';
+	      $mainStreamLabel = $datastreamValue->label;
+	      $mainStreamLabel = str_replace("_", " ", $mainStreamLabel);
+	    }
+	    if ($datastreamValue->ID == 'TN') {
+	      $hasTNStream = TRUE;
+	    }
+	    //create the links to each datastream
+	    $dataStreamBody .= $this->create_link_for_ds($object_pid, $datastreamValue); //"<tr><td><b>$key :</b></td><td>$value</td></tr>\n";
+	  }
         }
       }
       $dataStreamBody .= "</table>\n";
@@ -474,8 +498,9 @@ class ObjectHelper {
 	  $allow= fedora_fesl_check_roles($object_pid,'write');
 	}
 	if ($allow) {      
-	  $purgeObject = '<a title="' . t('Purge Object ') . $object_pid . '" href="' . base_path() . 'fedora/repository/purgeObject/' .
-              $object_pid . '"><img src="' . $base_url . '/' . $path . '/images/purge_big.png" alt="' . t('Purge Object') . '" class="icon">' . t('Purge Object') . '</a>';
+	  //$purgeObject = '<a title="' . t('Purge Object ') . $object_pid . '" href="' . base_path() . 'fedora/repository/purgeObject/' .
+              //$object_pid . '"><img src="' . $base_url . '/' . $path . '/images/purge_big.png" alt="' . t('Purge Object') . '" class="icon">' . t('Purge Object') . '</a>';
+          $purgeObject = drupal_get_form('fedora_repository_purge_object_form', $object_pid, check_plain(substr(request_uri(), strlen(base_path()))));
 	}
     } else {
       $purgeObject = '&nbsp;';
@@ -707,7 +732,7 @@ class ObjectHelper {
 	  // $ingestObject = '<a title="'. t('Ingest a New object into ') . $collectionName . ' '. $collection_pid . '" href="'. base_path() .
 	    $ingestObject = '<a title="' . t('Ingest a New object into !collection_name PID !collection_pid', array('!collection_name' => $collectionName, '!collection_pid' => $collection_pid)) . '" href="' . base_path() .
 		    'fedora/ingestObject/' . $collection_pid . '/' . $collectionName . '"><img src="' . $base_url . '/' . $path .
-		    '/images/ingest.png" alt="' . t('Add a New Object') . '" class="icon">' . t('Add to this Collection') . '</a>';
+		    '/images/ingest.png" alt="' . t('Add a New Object') . '" class="icon"></a>' . t(' Add to this Collection');
 	  }
 	}
       }
