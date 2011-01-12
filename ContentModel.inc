@@ -485,18 +485,47 @@ class ContentModel extends XMLDatastream {
     }
     return $ret;
   }
-  //----------------------------------------------------------------------------- 
-  // getFormComponents
-  // Params: none.
-  // Returns: none.
-  // 
-  //----------------------------------------------------------------------------- 
-  public function getFormCompositionAsXMLString() 
+  /**
+   * Gets the specified Ingest Form as a XML string
+   *
+   * @param $name
+   *   The name of the Ingest form to retrieve.
+   *
+   * @return
+   *   Returns an XML string repersenting the named form.
+   */
+  public function getIngestFormAsXMLString($name)
   {
     if(!$this->validate()) return FALSE;
-    return $this->xml->saveXML($this->xml->getElementsbyTagName('form_composition')->item(0));
+    $result = $this->xml->getElementsByTagName('ingest_form')->item(0)->getElementsByTagName('form');
+    for($i = 0; $i < $result->length; $i++) {
+      $node = $result->item($i);
+      if($node->attributes->getNamedItem('name')->value == $name) {
+	return $this->xml->saveXML($node);
+      }
+    }
+    return FALSE;
   }
-
+  /**
+   * Gets the specified Edit Form as a XML string
+   *
+   * @param $name
+   *   The name of the Edit form to retrieve.
+   *
+   * @return
+   *   Returns an XML string repersenting the named form.
+   */
+  public function getEditFormAsXMLString($name)
+  {
+    if(!$this->validate()) return FALSE;
+    $result = $this->xml->getElementsByTagName('edit_form')->item(0)->getElementsByTagName('form');
+    for($i = 0; $i < $result->length; $i++) {
+      $node = $result->item($i);
+      if($node->attributes->getNamedItem('name')->value == $name) {
+	return $this->xml->saveXML($node);
+      }
+    }
+  }
   /**
    * Gets an array of form elements to use in the ingest form.  The results of this array are passed
    * to the specified ingest form builder.  The form builder can optionally not use the elements as defined

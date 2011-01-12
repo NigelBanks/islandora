@@ -21,7 +21,7 @@
 //-------------------------------------------------------------------------------
 function &ife_get_tabpanel_values($clicked_button)
 {
-  $parents = $clicked_button['#parents'];  
+  $parents = $clicked_button['#array_parents'];  
   $depth = count($parents) - 2;
   $point = &$_POST;
   for($i = 0; $i < $depth; $i++) { 
@@ -40,7 +40,7 @@ function &ife_get_tabpanel_values($clicked_button)
 //-------------------------------------------------------------------------------
 function &ife_get_tabpanel_content(&$form, $clicked_button)
 {
-  $parents = $clicked_button['#parents'];
+  $parents = $clicked_button['#array_parents'];
   $depth = count($parents) - 2; // The button element and the tab its under decreases the depth by 2
   $point = &$form;
   for($i = 0; $i < $depth; $i++) { 

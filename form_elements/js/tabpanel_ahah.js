@@ -1,5 +1,5 @@
 $(document).ready(function() { 
-    var tabs = $(".action-expand-tab").tabs({collapsible: true});
+    var tabs = $(".action-expand-tab").tabs({collapsible: true, selected: -1 });
     $(".ui-icon-circle-plus").live("click", function() { 
         var id = $(this).text();
         $("#"+id).trigger("mousedown");

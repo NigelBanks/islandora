@@ -601,11 +601,10 @@ class ModsFormBuilder extends FormBuilder
   function buildIngestForm(&$form, $elements, &$form_values)
   {
     $form['#multistep'] = TRUE; // used so that it triggers a form rebuild every time.
-    $form_composition = new FormComposition($form['content_model_pid']['#value']);
+    $form_composition = new FormComposition($form['content_model_pid']['#value'], 'full');
     // As we iterate through the ContentModels Ingest Form Elements,
     // For each elementType we encounter construct using the form_composition..
-    $form = array_merge($form, $form_composition->getFormElement('/mods:mods'));
-    $form[$form_element_name] = $form_element;
+    $form = array_merge($form, $form_composition->buildForm());
     $form['submit'] = array(
       '#type' => 'submit',
       '#submit' => array('fedora_repository_edit_qdc_form_submit'),
