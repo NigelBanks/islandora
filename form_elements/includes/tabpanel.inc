@@ -1,24 +1,22 @@
-
 <?php
 
 // $Id$
 
-/* File: tabpanel.inc
- * Author: 
- *  Nigel Banks
- * 
- * Description: 
+/* @file
+ *
  *  Allows forms to dynamically add new tabs to a tabpanel in a form.
  */
 
-//-------------------------------------------------------------------------------
-// ife_get_tabpanel_values
-// Params:
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Gets the form values for $click_button's panel.
+ *
+ * @param $clicked_button
+ *   The button that initiated the ahah callback.
+ *
+ * @return
+ *   An array that contains the values for the panel that contained the 
+ *   $clicked_button.
+ */
 function &ife_get_tabpanel_values($clicked_button)
 {
   $parents = $clicked_button['#array_parents'];  
@@ -29,15 +27,17 @@ function &ife_get_tabpanel_values($clicked_button)
   }
   return $point;
 }
-//-------------------------------------------------------------------------------
-// ife_get_tabpanel_content
-// Params:
-//  form - 
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Gets the tabpanel's content form element.
+ *
+ * @param &$form
+ *   The cached drupal form.
+ * @param $clicked_button
+ *   The button that initiated the ahah callback.
+ *
+ * @return
+ *   The tabpanel's content form element.
+ */
 function &ife_get_tabpanel_content(&$form, $clicked_button)
 {
   $parents = $clicked_button['#array_parents'];
@@ -48,15 +48,15 @@ function &ife_get_tabpanel_content(&$form, $clicked_button)
   }
   return $point;
 }
-//-------------------------------------------------------------------------------
-// ife_count_tabpanels
-// Params:
-//  form - 
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Calculates the number of tab panels.
+ *
+ * @param &$content
+ *   The tabpanel's content element
+ *
+ * @return
+ *   The number of panels.
+ */
 function ife_count_tabpanels(&$content)
 {
   $count = 1;
@@ -64,15 +64,9 @@ function ife_count_tabpanels(&$content)
     $count++;
   return $count;
 }
-//-------------------------------------------------------------------------------
-// _ife_remove_tabpanel_from_form
-// Params:
-//  form - 
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Helper function for ife_remove_tabpanel_from_form
+ */
 function _ife_remove_tabpanel_from_form(&$form, $clicked_button) 
 {
   $content = &ife_get_tabpanel_content($form, $clicked_button);
@@ -83,15 +77,9 @@ function _ife_remove_tabpanel_from_form(&$form, $clicked_button)
   }
   unset($content[$count-1]);
 }
-//-------------------------------------------------------------------------------
-// _ife_remove_tabpanel_values
-// Params:
-//  form -
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Helper function for ife_remove_tabpanel_values
+ */
 function _ife_remove_tabpanel_values(&$form, $clicked_button) 
 {
   $content = ife_get_tabpanel_values($clicked_button);
@@ -102,29 +90,25 @@ function _ife_remove_tabpanel_values(&$form, $clicked_button)
   }
   unset($content[$count-1]);
 }
-//-------------------------------------------------------------------------------
-// ife_remove_tabpanel
-// Params:
-//  form - 
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Removes a tab panel.
+ *
+ * @param &$form
+ *  Form to remove the tab panel from.
+ * @param $clicked_button
+ *   The button that initiated the ahah callback.
+ */
 function ife_remove_tabpanel(&$form, $clicked_button) 
 {
   _ife_remove_tabpanel_from_form($form, $clicked_button);
   _ife_remove_tabpanel_values($form, $clicked_button);
 }
-//-------------------------------------------------------------------------------
-// ife_remove_added_tabpanels
-// Params:
-//  form -
-//  clicked_button -
-// Returns:
-//
-// 
-//-------------------------------------------------------------------------------
+/**
+ * Removes all tab panels from content except the first panel
+ *
+ * @param &$content
+ *   An array containing the forms repersentation of each panel.
+ */
 function ife_remove_added_tabpanels(&$content)
 {
   $count = ife_count_tabpanels($content);
@@ -132,15 +116,15 @@ function ife_remove_added_tabpanels(&$content)
     unset($content[$i]);
   }
 }
-//-------------------------------------------------------------------------------
-// ife_prune_extra_tabpanels
-// Params:
-//  form -
-//  clicked_button -
-// Returns:
-//
-// 
-//-------------------------------------------------------------------------------
+/**
+ * Removes extra tab panels from child tab panel. 
+ *
+ * Used to remove extra tab panels that might exist in the child tab panels
+ * from the copy used to create the new added tab panel.
+ *
+ * @param &$tabpanel
+ *   An array containing the forms repersentation of each panel.
+ */
 function ife_prune_extra_tabpanels(&$tabpanel)
 {
   $children = &$tabpanel['children']; 
@@ -153,15 +137,14 @@ function ife_prune_extra_tabpanels(&$tabpanel)
     }
   }
 }
-//-------------------------------------------------------------------------------
-// ife_add_tabpanel
-// Params:
-//  form -
-//  clicked_button -
-// Returns:
-//
-// 
-//-------------------------------------------------------------------------------
+/**
+ * Add a new tab panel.
+ *
+ * @param &$form
+ *   Cached drupal form.
+ * @param &$clicked_button
+ *   The add button.
+ */
 function ife_add_tabpanel(&$form, $clicked_button) 
 {
   $content = &ife_get_tabpanel_content($form, $clicked_button);
@@ -169,40 +152,37 @@ function ife_add_tabpanel(&$form, $clicked_button)
   $content[$count] = $content[0];
   ife_prune_extra_tabpanels($content[$count]);
 }
-//-------------------------------------------------------------------------------
-// ife_find_tabpanel_to_insert
-// Params:
-//  form - 
-//  clicked_button -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Find the modified tabpanel that we will return via ahah.
+ *
+ * @param &$form
+ *   Form to contains the tabpanel
+ * @param $clicked_button
+ *   The button that initiated the ahah callback.
+ */
 function ife_find_tabpanel_to_insert(&$form, $clicked_button)
 {
-  $offset = ($clicked_button['#action'] == 'remove')? 3 : 3;
   $parents = $clicked_button['#array_parents'];
-  $depth = count($parents) - $offset;
+  $depth = count($parents) - 3;
   $point = &$form;
   for($i = 0; $i < $depth; $i++) { 
     $point = &$point[$parents[$i]];
   }
   return $point;
 }
-//-------------------------------------------------------------------------------
-// is_clicked_button
-// Params:
-//  form_element - a form element.
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
-function is_clicked_button(&$form_element)
+/**
+ * Checks if a form element in the clicked button that started the ahah 
+ * callback.
+ *
+ * @param &$form
+ *   Form element to check.
+ */
+function is_clicked_button(&$form)
 {
-  if (isset($form_element['#input']) && $form_element['#input']) {
-    if (isset($form_element['#executes_submit_callback'])) {
-      $name = $form_element['#name'];
-      $value = $form_element['#value']; 
+  if (isset($form['#input']) && $form['#input']) {
+    if (isset($form['#executes_submit_callback'])) {
+      $name = $form['#name'];
+      $value = $form['#value']; 
       if (isset($_POST[$name]) && $_POST[$name] == $value) {
 	return TRUE;
       }
@@ -210,29 +190,13 @@ function is_clicked_button(&$form_element)
   }
   return FALSE;
 }
-//-------------------------------------------------------------------------------
-// ife_clicked_button
-// Params:
-//  form - 
-//  form_state -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
+/**
+ * Searches the form for the button that initiated the ahah callback.
+ *
+ * @return
+ *   The clicked button.
+ */
 function ife_find_clicked_button($form, $form_state)
-{
-  return _ife_find_clicked_button($form, $form_state);
-}
-//-------------------------------------------------------------------------------
-// _ife_find_clicked_button
-// Params:
-//  form - 
-//  form_state -
-// Returns:
-//
-//
-//-------------------------------------------------------------------------------
-function _ife_find_clicked_button(&$form, &$form_state)
 {
   // Process Form Element
   if ((!empty($form['#type'])) && ($info = _element_info($form['#type']))) {
@@ -267,13 +231,11 @@ function _ife_find_clicked_button(&$form, &$form_state)
   }
   return NULL;
 }
-//-------------------------------------------------------------------------------
-// ife_tabpanel_ahah
-// Params: 
-// Returns:
-// 
-// 
-//-------------------------------------------------------------------------------
+/**
+ * Menu hook for ahah callbacks.
+ *
+ * Depending on the button clicked this will remove a panel or add one.
+ */
 function ife_tabpanel_ahah() 
 {
   if (!isset($_POST['form_build_id']))  
@@ -284,7 +246,6 @@ function ife_tabpanel_ahah()
     exit();
 
   $clicked_button = ife_find_clicked_button($form, $form_state);
-  
   switch($clicked_button['#action']) {
   case 'remove':
     ife_remove_tabpanel($form, $clicked_button);
@@ -313,15 +274,9 @@ function ife_tabpanel_ahah()
 		    'settings' => $settings,
 		    ));
 }
-//-------------------------------------------------------------------------------
-// theme_tabpanel
-// Params:
-//  element - form element of tabpanel type.
-// Returns:
-//  Themed html repersenting a collection of tabs.
-// 
-// 
-//-------------------------------------------------------------------------------
+/**
+ * Theme hook for a tabpanel
+ */
 function theme_tabpanel($element) 
 {
   global $base_url;
@@ -331,15 +286,9 @@ function theme_tabpanel($element)
   drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.7.custom.css');
   return '<div id=' . t(implode('-',$element['#array_parents'])) . ' class="action-expand-tab">'.$element['#children'].'</div>';
 }
-//-------------------------------------------------------------------------------
-// theme_tabpanel_items
-// Params:
-//  form - The parent form element to all form elements within the tabpanel.
-// Returns:
-//  Themed html repersenting all the tabpanels and the elements contained within 
-//  them.
-// 
-//-------------------------------------------------------------------------------
+/**
+ * Theme hook for the tabpanels contents.
+ */
 function theme_tabpanel_items($form) 
 {
   $name = $form['#name'];

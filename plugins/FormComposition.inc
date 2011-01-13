@@ -2,76 +2,70 @@
 
 // $Id$
 
-/* File: FormComposition.inc
- * Author: 
- *  Nigel Banks 
+/* @file
  * 
- * Description: 
- *  Repersents the <form_composition> element of a content model
- *  providing convience methods for processing and building elements from
- *  the schema.
+ *  
  */
 module_load_include('inc', 'fedora_repository', 'api/utils.inc');
 
-/******************************************************************************** 
- * Class: FormComposition
+/**
+ * Short Description
  *
- * Description: 
- *
- * Should really be named form builder...
- *******************************************************************************/
+ * Long Description
+ */
 class FormComposition
 {
   static $MODS_NS = 'http://www.loc.gov/mods/v3';
-  protected static $GET_FORM_CONTROL_VALUE_FUNCTIONS = array(
-							     'xpath' => 'XPathFormControlValueFunction',
-							     ); 
-  protected $contentModel;
+  protected static $GET_FORM_CONTROL_VALUE_FUNCTIONS = array('xpath' => 'XPathFormControlValueFunction'); 
   protected $fedoraItem;
-  protected $pid; 
   protected $doc;
   protected $xpath;
-
-  //-----------------------------------------------------------------------------
-  // Constructor
-  // Params: 
-  //  pid - Object ID of the Content Model
-  //-----------------------------------------------------------------------------
-  function __construct($contentModelPid, $name, $objectPid=NULL) 
+  /**
+   * Constructs a new FormComposition Object.
+   *
+   * @param $name
+   *   The name of the form.
+   * @param $content_model_pid
+   *   The pid of the content model.
+   * @param $object_pid
+   *   The object pid.
+   */
+  function __construct($name, $content_model_pid, $object_pid = NULL) 
   {
-    if ($contentModelPid == null)
-      throw new Exception('FormComposition constructor, requires a valid pid for the contentModel.');
     module_load_include('inc', 'fedora_repository', 'ContentModel');
     module_load_include('inc', 'fedora_repository', 'api/fedora_item');        
-    $this->pid = $pid;
-    $this->contentModel = ContentModel::loadFromModel($contentModelPid);
-    if($objectPid !== null) {
-      $this->doc = DOMDocument::loadXML($this->contentModel->getEditFormAsXMLString($name));      
-      $this->fedoraItem = new fedorae_item($objectPid);
+    $content_model = ContentModel::loadFromModel($content_model_pid);
+    if(isset($object_pid)) {
+      $this->doc = DOMDocument::loadXML($content_model->getEditFormAsXMLString($name));      
+      $this->fedoraItem = new fedorae_item($object_pid);
     }
     else {
-      $this->doc = DOMDocument::loadXML($this->contentModel->getIngestFormAsXMLString($name));
+      $this->doc = DOMDocument::loadXML($content_model->getIngestFormAsXMLString($name));
     }
     $this->xpath = new DOMXPath($this->doc); // MODS.xml data access
     $this->xpath->registerNamespace("php", "http://php.net/xpath"); // Register the php: namespace (required)
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Build a drupal form.
+   *
+   * @return
+   *   A drupal form repersenting the form.
+   */
   public function buildForm()
   {
     $nodes = $this->mapNodeListToArray($this->xpath->evaluate("child::*"));
     return $this->buildFormElements($nodes);
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Builds a drupal form, from an array of elements in the XML definition.
+   *
+   * @param $nodes
+   *   An array of nodes within the form's XML definition, that repersent
+   *   Drupal form elements.
+   *
+   * @return
+   *   A drupal form repersenting the elements from the $nodes array.
+   */
   private function buildFormElements($nodes) 
   {
     $form = array();
@@ -80,12 +74,16 @@ class FormComposition
     }
     return $form;
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Builds a drupal form, from an array of elements in the XML definition.
+   *
+   * @param $node
+   *   A node from the form's XML definition, that repersent
+   *   Drupal form element.
+   *
+   * @return
+   *   A drupal form repersenting the element defined by $node.
+   */
   private function buildFormElement(&$node)
   {
     $form = array('#type' => $node->tagName);
@@ -95,48 +93,73 @@ class FormComposition
     }
     return $form;
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns: TRUE if there exists a unique child named "content" in this 
-  //  specified node parameter;  
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Tests if a node has content.
+   *
+   * @param &$node
+   *   A node from the form's XML definition, that repersent
+   *   Drupal form element.
+   *
+   * @return
+   *   Returns: TRUE if there exists a unique child named "content" in this 
+   *   specified node parameter.
+   */
   private function hasContent(&$node) 
   {
     return $this->xpath->evaluate("count(child::*[name()='content'])", $node) == 1;
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Gets content of node, and builds a drupal form element repersenting that
+   * content.
+   *
+   * This function is only run on nodes that have a child 'content' so fieldsets
+   * tabpanels and the like.
+   *
+   * @param &$node
+   *   A node from the form's XML definition, that repersent
+   *   Drupal form element.
+   *
+   * @return
+   *   A drupal form repersenting all the elements within 'content'
+   */
   private function getContent(&$node) 
   {
     if($content = $this->xpath->evaluate("child::*[name()='content']", $node)->item(0)) {
       return array($this->buildFormElements($this->mapNodeListToArray($this->xpath->evaluate('child::*', $content))));
     }
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Sets the form controls for a given node
+   *
+   * Form controls are things like #title.
+   *
+   * @param &$form
+   *   Drupal form element whose controls will be set.
+   * @param &$node
+   *   A node from the form's XML definition, that repersent
+   *   Drupal form element.
+   */
   private function setDrupalFormControls(&$form, &$node) 
   {
-    $formControls = $this->mapNodeListToArray($this->xpath->evaluate("child::*[name()!='content']", $node), 'tagName');
-    foreach($formControls as $name => $formControlNode) {
-      $form = array_merge($form,  $this->getDrupalFormControlValues($name, $formControlNode));
+    $form_controls = $this->mapNodeListToArray($this->xpath->evaluate("child::*[name()!='content']", $node), 'tagName');
+    foreach($form_controls as $name => $node) {
+      $form = array_merge($form,  $this->getDrupalFormControlValues($name, $node));
     }
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Gets a form control values.
+   *
+   * @param &$name
+   *   The $node's tag name.
+   * @param &$node
+   *   A node from the form's XML definition, that repersents a form control.
+   *
+   * @return
+   *   An array that has a collection of form controls. Example:
+   * @code
+   *   array('#title' => 'My Title', #options => array('option 1', 'option 2'))
+   * @endcode
+   */
   private function getDrupalFormControlValues(&$name, &$node) 
   {
      if($func = $this->getDrupalFormControlValueFunction($name)) {
@@ -144,12 +167,16 @@ class FormComposition
      }
      return NULL;
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Gets a function name that can extract one or more form controls values
+   * from a node in the form's XML definition.
+   *
+   * @param &$name
+   *   The form controls name.
+   *
+   * @return
+   *   A function name that can extract specific form controls.
+   */
   private function getDrupalFormControlValueFunction(&$name) 
   {
     if(isset(self::$GET_FORM_CONTROL_VALUE_FUNCTIONS[$name])) {
@@ -157,12 +184,20 @@ class FormComposition
     }
     return 'DefaultFormControlValueFunction';
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Default function for extracting a form control from a node in
+   * the form's XML definition.
+   *
+   * This can handle nodes that have only text content, or children
+   * that only contain text content.
+   *
+   * @param &$name
+   *   The tag name of $node.
+   * @param &$node
+   *   A DomNode from the form's XML definition that repersent a form control.
+   * @return
+   *   A form control.
+   */
   private function DefaultFormControlValueFunction(&$name, &$node)
   {
     $count = $this->xpath->evaluate("count(child::*)", $node);
@@ -173,31 +208,48 @@ class FormComposition
       return array('#'.$name => $this->mapNodeListToArray($this->xpath->evaluate('child::*/child::text()', $node), NULL, 'textContent'));
     }
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
+  /**
+   * Extracts form controls for xpath elements in the form's XML definition.
+   *
+   * @param &$name
+   *   The tag name of $node.
+   * @param &$node
+   *   A DomNode from the form's XML definition that repersent a form control.
+   * @return
+   *   Two form controls #xpath and #xpath_full. #xpath_full is a boolean 
+   *   that describes if #xpath is a full xpath or just a part of one.
+   */
   private function XPathFormControlValueFunction(&$name, &$node)
   {
     $full_path = $this->xpath->evaluate("attribute::*[name()='full_path']", $node)->item(0)->value;
     $full_path = strcasecmp($full_path, 'true') == 0 ? TRUE : FALSE;
-    $defaultXPathDrupalFormControlValue = $this->DefaultFormControlValueFunction($name, $node);
-    return array_merge($defaultXPathDrupalFormControlValue, array('#xpath_full' => $full_path));
+    $xpath_form_control = $this->DefaultFormControlValueFunction($name, $node);
+    return array_merge($xpath_form_control, array('#xpath_full' => $full_path));
   }
-  //-----------------------------------------------------------------------------
-  // 
-  // Params:
-  // Returns:
-  // 
-  //-----------------------------------------------------------------------------
-  private function mapNodeListToArray($nodeList, $key = NULL, $value = NULL) 
+  /**
+   * Helper function that maps a node list to an array.
+   *
+   * Supports maping the keys and values of the returned array to values within
+   * each node.
+   *
+   * @param &$node_list
+   *   A DomNodeList.
+   * @param $key
+   *   (optional) A string that sets the keys of the array to this class 
+   *   property of the DomNode. If not set the array elements will be numbered.
+   * @param $value
+   *   (optional) A string that sets the values of the array to this class 
+   *   property of the DomNode. If not set the value will be the DOMNode.
+   *
+   * @return
+   *   An mapped array of keys and values, determined by the parameters $key and $value.
+   */
+  private function mapNodeListToArray($node_list, $key = NULL, $value = NULL) 
   {
     $result = NULL;
-    $count = $nodeList->length;
+    $count = $node_list->length;
     for($i = 0; $i < $count; $i++) {
-      $node = $nodeList->item($i);
+      $node = $node_list->item($i);
       if($key) {
 	if($value) {
 	  $result[$node->$key] = $node->$value;
