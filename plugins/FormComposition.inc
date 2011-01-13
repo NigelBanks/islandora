@@ -142,8 +142,8 @@ class FormComposition
   private function setDrupalFormControls(&$form, &$node) 
   {
     $form_controls = $this->mapNodeListToArray($this->xpath->evaluate("child::*[name()!='content']", $node), 'tagName');
-    foreach($form_controls as $name => $node) {
-      $form = array_merge($form,  $this->getDrupalFormControlValues($name, $node));
+    foreach($form_controls as $name => $form_control_node) {
+      $form = array_merge($form,  $this->getDrupalFormControlValues($name, $form_control_node));
     }
   }
   /**
