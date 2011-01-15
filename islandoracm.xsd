@@ -353,7 +353,7 @@
 						<xsd:element minOccurs="0" name="element_validate"
 							type="formControlElementValidateType"/>
 						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element name="default_value" type="xsd:normalizedString"/>
+						<xsd:element name="return_value" type="xsd:normalizedString"/>
 					</xsd:all>
 				</xsd:complexType>
 			</xsd:element>

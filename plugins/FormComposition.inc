@@ -86,7 +86,7 @@ class FormComposition
    */
   private function buildFormElement(&$node)
   {
-    $form = array('#type' => $node->tagName);
+    $form = array('#type' => $node->tagName, '#tree' => TRUE);
     $this->setDrupalFormControls($form, $node);
     if($this->hasContent($node)) {
       $form['content'] = $this->getContent($node);
