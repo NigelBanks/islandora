@@ -38,12 +38,10 @@ class FormComposition {
     module_load_include('inc', 'fedora_repository', 'api/fedora_item');
     $content_model = ContentModel::loadFromModel($content_model_pid);
     if (isset($object_pid)) {
-      $this->doc = DOMDocument::loadXML($content_model->getEditFormAsXMLString($name));
-      $this->fedoraItem = new fedorae_item($object_pid);
+      $this->fedoraItem = new fedora_item($object_pid);
     }
-    else {
-      $this->doc = DOMDocument::loadXML($content_model->getIngestFormAsXMLString($name));
-    }
+    $this->doc = new DOMDocument();
+    $this->doc->loadXML($content_model->getFormAsXMLString($name));
     $this->xpath = new DOMXPath($this->doc); // MODS.xml data access
     $this->xpath->registerNamespace("php", "http://php.net/xpath"); // Register the php: namespace (required)
   }

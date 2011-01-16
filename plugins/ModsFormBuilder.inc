@@ -42,7 +42,7 @@ class ModsDocument extends DOMDocument {
   /**
    * Construct a MODS XML document.
    *
-   * @param &$form_values
+   * @param array &$form_values
    *   Submited form values in which the MODS document is generated from.
    */
   function __construct(&$form_values) {
@@ -351,7 +351,7 @@ class ModsDocument extends DOMDocument {
   /**
    *
    */
-  private function bar($parents) {
+  private function getFormAtDepth($parents) {
     $point = &$this->form[self::root];
     foreach ($parents as $ancestor) {
       $point = &$point[$ancestor];
@@ -373,7 +373,7 @@ class ModsDocument extends DOMDocument {
       $count = count($parents);
       for ($i = 0; $i < $count; $i++) {
         array_pop($parents);
-        $ancestor = $this->bar($parents);
+        $ancestor = $this->getFormAtDepth($parents);
         $parent_xpath = $ancestor['#xpath'];
         $parent_xpath_index = $ancestor['#xpath_index'];
         if (isset($parent_xpath)) {
@@ -402,17 +402,19 @@ class ModsFormBuilder extends FormBuilder {
   protected $contentModel;
   protected $fedoraItem;
   protected $pid;
+  protected $formName;
 
   /**
    * @param $pid
    *   (optional) Object pid, of the object that will be edited.
    */
-  function __construct($pid = NULL) {
+  function __construct($pid = NULL, $form_name = NULL) {
     parent::__construct();
     if ($pid !== NULL) { // Editing a data stream
       module_load_include('inc', 'fedora_repository', 'ContentModel');
       module_load_include('inc', 'fedora_repository', 'api/fedora_item');
       $this->pid = $pid;
+      $this->formName = $form_name;
       $this->contentModel = ContentModel::loadFromObject($pid);
       $this->fedoraItem = new fedora_item($pid);
     }
@@ -671,10 +673,9 @@ class ModsFormBuilder extends FormBuilder {
     }
     $form['#tree'] = TRUE;
     $form['#multistep'] = TRUE;
-    $form['indicator2'] = array('#type' => 'fieldset', '#title' => t('Edit Meta-data'));
     $form['pid'] = array('#type' => 'hidden', '#value' => $this->pid);
-    $form_composition = new FormComposition('full', $this->contentModel->pid, $this->pid);
-    $form['indicator2'] = array_merge($form['indicator2'], $form_composition->buildForm());
+    $form_composition = new FormComposition($this->formName, $this->contentModel->pid, $this->pid);
+    $form['root'] = $form_composition->buildForm();
     $form['submit'] = array(
       '#type' => 'submit',
       '#submit' => array('fedora_repository_edit_qdc_form_submit'),

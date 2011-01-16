@@ -589,7 +589,7 @@ function fedora_repository_replace_stream_form_submit($form, &$form_state) {
   drupal_goto('fedora/repository/' . $pid . '/-/' . $dsId);
 }
 
-function fedora_repository_edit_qdc_page($pid = NULL, $dsId = NULL) {
+function fedora_repository_edit_qdc_page($pid = NULL, $dsId = NULL, $form_name = NULL) {
   module_load_include('inc', 'fedora_repository', 'ObjectHelper');
   global $user;
   if ($pid == NULL || $dsId == NULL) {
@@ -600,12 +600,12 @@ function fedora_repository_edit_qdc_page($pid = NULL, $dsId = NULL) {
     drupal_set_message(t("You do not have access to Fedora objects within the attempted namespace or you do not have permission to edit meta data for this object."), 'error');
     return ' ';
   }
-  $output = drupal_get_form('fedora_repository_edit_qdc_form', $pid, $dsId);
+  $output = drupal_get_form('fedora_repository_edit_qdc_form', $pid, $dsId, $form_name);
 
   return $output;
 }
 
-function fedora_repository_edit_qdc_form(&$form_state, $pid, $dsId = NULL) {
+function fedora_repository_edit_qdc_form(&$form_state, $pid, $dsId = NULL, $form_name = NULL) {
   module_load_include('inc', 'fedora_repository', 'ContentModel');
   module_load_include('inc', 'fedora_repository', 'ObjectHelper');
   if ($pid == NULL) {
@@ -631,7 +631,7 @@ function fedora_repository_edit_qdc_form(&$form_state, $pid, $dsId = NULL) {
 
   $output = '';
   if (($cm = ContentModel::loadFromObject($pid)) !== FALSE) {
-    $output = $cm->buildEditMetadataForm($pid, $dsId);
+    $output = $cm->buildEditMetadataForm($pid, $dsId, $form_name);
   }
 
   if (empty($output)) {

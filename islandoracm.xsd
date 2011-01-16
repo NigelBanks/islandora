@@ -16,6 +16,14 @@
 			<xsd:element name="ingest_rules" type="ingest_rulesType"/>
 			<xsd:element name="edit_metadata_method" type="edit_metadata_methodType" minOccurs="0"/>
 			<xsd:element name="edit_form" type="edit_formType"/>
+			<xsd:element name="forms">
+				<xsd:complexType>
+					<xsd:sequence>
+						<xsd:element name="form" type="formType" maxOccurs="unbounded" minOccurs="1"
+						/>
+					</xsd:sequence>
+				</xsd:complexType>
+			</xsd:element>
 		</xsd:all>
 		<xsd:attribute name="name" type="xsd:normalizedString" use="required"/>
 	</xsd:complexType>
@@ -29,7 +37,6 @@
 	<xsd:complexType name="ingest_formType">
 		<xsd:sequence>
 			<xsd:element name="form_builder_method" type="form_builder_methodType"/>
-			<xsd:element name="form" type="formType" maxOccurs="unbounded" minOccurs="1"/>
 		</xsd:sequence>
 		<xsd:attribute name="dsid" type="xsd:normalizedString" use="required"/>
 		<xsd:attribute name="page" type="xsd:positiveInteger" use="required"/>
@@ -38,10 +45,9 @@
 
 	</xsd:complexType>
 	<xsd:complexType name="edit_formType">
-		<xsd:all>
+		<xsd:sequence>
 			<xsd:element name="form_builder_method" type="form_builder_methodType"/>
-			<xsd:element name="form" type="formType"/>
-		</xsd:all>
+		</xsd:sequence>
 		<xsd:attribute name="dsid" type="xsd:normalizedString" use="required"/>
 	</xsd:complexType>
 	<xsd:complexType name="form_builder_methodType">
