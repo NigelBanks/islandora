@@ -45,8 +45,13 @@ class ModsDocument extends DOMDocument {
    * @param array &$form_values
    *   Submited form values in which the MODS document is generated from.
    */
-  function __construct(&$form_values) {
+  function __construct(&$form_values, $pid) {
     parent::__construct();
+    if($pid) {
+      $fedora_item = new fedora_item($pid);
+      $xml = $fedora_item->get_datastream_dissemination('MODS');
+      $this->loadXML($xml);
+    }
     $this->formatOutput = TRUE;
     $this->xpath = new DOMXPath($this);
     $this->xpath->registerNamespace("mods", self::mods_ns);
@@ -521,7 +526,7 @@ class ModsFormBuilder extends FormBuilder {
    *   Not used.
    */
   public function handleEditMetadataForm(&$form_id, &$form_values, &$soap_client) {
-    $mods = new ModsDocument($form_values); // TODO: We need to pass the Object pid as well for merging.
+    $mods = new ModsDocument($form_values, $this->pid); // TODO: We need to pass the Object pid as well for merging.
     say($mods->saveXML());
     exit();
     $this->modifyDatastream($mods, 'MODS', 'MODS Record', 'text/xml');

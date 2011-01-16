@@ -1169,7 +1169,7 @@ class ContentModel extends XMLDatastream {
     global $base_url;
     $ret = FALSE;
     if ($this->validate()) {
-      $method = $this->xml->getElementsByTagName('edit_metadata_method');
+      $method = $this->xml->getElementsByTagName('edit_form')->item(0)->getElementsByTagName('form_builder_method');
       if ($method->length > 0) {
         $method = $method->item(0);
         $module = $method->getAttribute('module');
