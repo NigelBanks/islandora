@@ -535,12 +535,14 @@ class formClass {
       return FALSE;
     }
     $modelsForForm = array();
+    $forms_avaliable = array();
     foreach ($contentModels as $contentModel) {
       $identifier = $contentModel->getIdentifier();
       $name = $contentModel->name;
       $modelsForForm["$identifier"] = "$name";
+      $forms_avaliable[$identifier] = $contentModel->getFormNames();
     }
-
+    
     switch ($form_state['storage']['step']) {
       case 1:
         $form['indicator'] = array(
@@ -554,6 +556,15 @@ class formClass {
         '#options' => $modelsForForm,
         //'#description' => t('Content models available in this collection.  A content model defines what is allowed in a collection and what to do with a file when it is uploaded (An example may creating a thumbnail from an image.).')
         '#description' => t('Content models define datastream composition, relationships between this and other content models, and the mandatory behaviors associated with each digital object.<br /> Additional information may be found <a href="https://wiki.duraspace.org/display/FEDORACREATE/Content+Models+Overview">here.</a> ')
+
+        );
+
+        $form['indicator']['forms'] = array(// content models available
+        '#type' => 'select',
+        '#title' => t('Forms available'),
+        '#options' => $forms_avaliable,
+        //'#description' => t('Content models available in this collection.  A content model defines what is allowed in a collection and what to do with a file when it is uploaded (An example may creating a thumbnail from an image.).')
+        '#description' => t('The form to use for ingesting the digital object.')
 
         );
         break;

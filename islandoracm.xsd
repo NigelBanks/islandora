@@ -155,7 +155,7 @@
 	<xsd:complexType name="formType">
 		<xsd:complexContent>
 			<xsd:extension base="formElementType">
-				<xsd:attribute name="name"/>
+				<xsd:attribute name="name" type="xsd:normalizedString" use="required"/>
 			</xsd:extension>
 		</xsd:complexContent>
 	</xsd:complexType>

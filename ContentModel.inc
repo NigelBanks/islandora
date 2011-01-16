@@ -480,6 +480,25 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
+   *
+   * @return array
+   *    An array of form names that exist in this content model.
+   */
+  public function getFormNames() {
+    if (!$this->validate()) {
+      return FALSE;
+    }
+    $ret = array();
+    $result = $this->xml->getElementsByTagName('forms')->item(0)->getElementsByTagName('form');
+    for ($i = 0; $i < $result->length; $i++) {
+      $node = $result->item($i);
+      $name = $node->getAttribute('name');
+      $ret[$name] = $name;
+    }
+    return $ret;
+  }
+
+  /**
    * Gets the specified Ingest Form as a XML string
    *
    * @param $name
@@ -1041,6 +1060,10 @@ class ContentModel extends XMLDatastream {
       $form['models'] = array(//content models available
         '#type' => 'hidden',
         '#value' => $form_state['values']['models'],
+      );
+      $form['forms'] = array(//content models available
+        '#type' => 'hidden',
+        '#value' => $form_state['values']['forms'],
       );
       $form['fullpath'] = array(
         '#type' => 'hidden',

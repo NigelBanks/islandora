@@ -547,7 +547,7 @@ class ModsFormBuilder extends FormBuilder {
    */
   public function buildIngestForm(&$form, $elements, &$form_values) {
     $form['#multistep'] = TRUE; // used so that it triggers a form rebuild every time.
-    $form_composition = new FormComposition('full', $form['content_model_pid']['#value']);
+    $form_composition = new FormComposition($form['forms']['#value'], $form['content_model_pid']['#value']);
     $form['root'] = $form_composition->buildForm();
     $form['submit'] = array(
       '#type' => 'submit',
