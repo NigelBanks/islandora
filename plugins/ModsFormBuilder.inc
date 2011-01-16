@@ -33,10 +33,11 @@ function say($a) {
  * Extents DOMDocument
  */
 class ModsDocument extends DOMDocument {
-  const ns = 'http://www.loc.gov/mods/v3';
+  const mods_ns = 'http://www.loc.gov/mods/v3';
+  const xlink_ns = 'http://www.w3.org/1999/xlink';
+  const xsi_ns = 'http://www.w3.org/2001/XMLSchema-instance';
   const root = 'root';
   private $formValues;
-  
 
   /**
    * Construct a MODS XML document.
@@ -48,7 +49,9 @@ class ModsDocument extends DOMDocument {
     parent::__construct();
     $this->formatOutput = TRUE;
     $this->xpath = new DOMXPath($this);
-    $this->xpath->registerNamespace("mods", self::ns); // Register the php: namespace (required)
+    $this->xpath->registerNamespace("mods", self::mods_ns);
+    $this->xpath->registerNamespace("xlink", self::xlink_ns);
+    $this->xpath->registerNamespace("xsi", self::xsi_ns);
     $this->formValues = $form_values;
     $this->form = &$this->getForm();
     $this->createModsDocumentFromForm();
@@ -68,7 +71,7 @@ class ModsDocument extends DOMDocument {
     $form_build_id = $this->formValues['form_build_id'];
     if (!$form = form_get_cache($form_build_id, $form_state))
       exit();
-    $this->setParentFormControls($form[self::root]);
+    $this->setInternalFormControls($form[self::root], $form_state);
     return $form;
   }
 
@@ -76,7 +79,18 @@ class ModsDocument extends DOMDocument {
    *
    * @param <type> $form
    */
-  private function setParentFormControls(&$form) {
+  private function setInternalFormControls(&$form, &$form_state) {
+    // Process Form Element
+    if ((!empty($form['#type'])) && ($info = _element_info($form['#type']))) {
+      $form += $info;
+    }
+    if (isset($form['#process']) && !$form['#processed']) {
+      foreach ($form['#process'] as $process) {
+        if (function_exists($process)) {
+          $form = $process($form, isset($edit) ? $edit : NULL, $form_state, NULL);
+        }
+      }
+    }
     foreach (element_children($form) as $key) {
       if (!isset($form[$key]['#tree'])) {
         $form[$key]['#tree'] = $form['#tree'];
@@ -87,7 +101,7 @@ class ModsDocument extends DOMDocument {
         $array_parents[] = $key;
         $form[$key]['#array_parents'] = $array_parents;
       }
-      $this->setParentFormControls($form[$key]);
+      $this->setInternalFormControls($form[$key], $form_state);
     }
   }
 
@@ -110,9 +124,9 @@ class ModsDocument extends DOMDocument {
    */
   private function setRootAttributes() {
     $root = $this->documentElement;
-    $root->setAttribute('xmlns:xlink', "http://www.w3.org/1999/xlink");
-    $root->setAttribute('xmlns:mods', self::ns);
-    $root->setAttribute('xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance");
+    $root->setAttribute('xmlns:xlink', self::xlink_ns);
+    $root->setAttribute('xmlns:mods', self::mods_ns);
+    $root->setAttribute('xmlns:xsi', self::xsi_ns);
     $this->setCorrectVersion($root);
   }
 
@@ -124,23 +138,23 @@ class ModsDocument extends DOMDocument {
     switch ($version) {
       case '3.0':
         $root->setAttribute('version', '3.0');
-        $root->setAttribute('xsi:schemaLocation', self::ns . " http://www.loc.gov/standards/mods/v3/mods-3-0.xsd");
+        $root->setAttribute('xsi:schemaLocation', self::mods_ns . " http://www.loc.gov/standards/mods/v3/mods-3-0.xsd");
         break;
       case '3.1':
         $root->setAttribute('version', '3.1');
-        $root->setAttribute('xsi:schemaLocation', self::ns . " http://www.loc.gov/standards/mods/v3/mods-3-1.xsd");
+        $root->setAttribute('xsi:schemaLocation', self::mods_ns . " http://www.loc.gov/standards/mods/v3/mods-3-1.xsd");
         break;
       case '3.2':
         $root->setAttribute('version', '3.2');
-        $root->setAttribute('xsi:schemaLocation', self::ns . " http://www.loc.gov/standards/mods/v3/mods-3-2.xsd");
+        $root->setAttribute('xsi:schemaLocation', self::mods_ns . " http://www.loc.gov/standards/mods/v3/mods-3-2.xsd");
         break;
       case '3.3':
         $root->setAttribute('version', '3.3');
-        $root->setAttribute('xsi:schemaLocation', self::ns . " http://www.loc.gov/standards/mods/v3/mods-3-3.xsd");
+        $root->setAttribute('xsi:schemaLocation', self::mods_ns . " http://www.loc.gov/standards/mods/v3/mods-3-3.xsd");
         break;
       default:
         $root->setAttribute('version', '3.4');
-        $root->setAttribute('xsi:schemaLocation', self::ns . " http://www.loc.gov/standards/mods/v3/mods-3-4.xsd");
+        $root->setAttribute('xsi:schemaLocation', self::mods_ns . " http://www.loc.gov/standards/mods/v3/mods-3-4.xsd");
         break;
     }
   }
@@ -155,15 +169,20 @@ class ModsDocument extends DOMDocument {
    */
   private function recurseElements($form, $form_values) {
     foreach ($form as $index => $item) {
-      $form_value = $form_values[$index];
-      if (isset($item['#xpath']) && isset($form_value) && !is_array($form_value)) {
-        $path = $this->getXPath($item);
-        if ($path) {
-          $this->createOrModifyElement($path, $item, $form_value);
+      if (is_numeric($index)) {
+        $form_value = $form_values[$index];
+        if (isset($item['#xpath']) && isset($form_value) && !is_array($form_value)) {
+          $path = $this->getXPath($item);
+          if ($path) {
+            var_dump($path);
+            var_dump($form_value);
+            echo "<br/>";
+            $this->createOrModifyElement($path, $item, $form_value);
+          }
         }
-      }
-      if ($this->hasContent($item)) {
-        $this->processContent($item['content'], $form_value['content']);
+        if ($this->hasContent($item)) {
+          $this->processContent($item['content'], $form_value['content']);
+        }
       }
     }
     return;
@@ -181,7 +200,7 @@ class ModsDocument extends DOMDocument {
    */
   private function processContent(&$form, &$form_values) {
     foreach ($form as $index => $item) {
-      if(is_numeric($index)) {
+      if (is_numeric($index)) {
         $this->recurseElements($item, $form_values[$index]);
       }
     }
@@ -209,6 +228,10 @@ class ModsDocument extends DOMDocument {
    */
   private function getNodeFromXPath($path) {
     $result = $this->xpath->evaluate($path);
+    if(!$result) {
+      drupal_set_message(t('XPath: %xpath generated by the form is not valid please correct this in the content modeller.', array('%xpath' => $path)));
+      return;
+    }
     $class = get_class($result);
     switch ($class) {
       case 'DOMNodeList':
@@ -254,7 +277,7 @@ class ModsDocument extends DOMDocument {
     }
     else {
       $name = $this->getElementNameFromXPath($path);
-      $node = $this->createElementNS(self::ns, $name);
+      $node = $this->createElementNS(self::mods_ns, $name);
       $parent_node->appendChild($node);
       return $node;
     }
@@ -284,8 +307,8 @@ class ModsDocument extends DOMDocument {
     $index = strrpos($path, '/');
     $len = strlen($path);
     $name = substr($path, $index + 1, $len - 1);
-    if (($index = strrpos($subpath, '[')) !== FALSE) {
-      $subpath = substr($subpath, 0, $index);
+    if (($index = strrpos($name, '[')) !== FALSE) {
+      $name = substr($name, 0, $index);
     }
     return $name;
   }
@@ -302,7 +325,7 @@ class ModsDocument extends DOMDocument {
    */
   private function bar($parents) {
     $point = &$this->form[self::root];
-    foreach($parents as $ancestor) {
+    foreach ($parents as $ancestor) {
       $point = &$point[$ancestor];
     }
     return $point;
@@ -323,8 +346,11 @@ class ModsDocument extends DOMDocument {
       for ($i = 0; $i < $count; $i++) {
         array_pop($parents);
         $ancestor = $this->bar($parents);
-        if (isset($ancestor['#xpath'])) {
-          $xpath = $ancestor['#xpath'] . '/' . $xpath;
+        $parent_xpath = $ancestor['#xpath'];
+        $parent_xpath_index = $ancestor['#xpath_index'];
+        if (isset($parent_xpath)) {
+          $parent_xpath = $parent_xpath . (isset($parent_xpath_index) ? '[' . $parent_xpath_index . ']' : '');
+          $xpath = $parent_xpath . (($xpath != '') ? '/' . $xpath : '');
           if ($ancestor['#xpath_full']) {
             break;
           }

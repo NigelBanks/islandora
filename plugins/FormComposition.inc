@@ -224,6 +224,9 @@ class FormComposition
     $full_path = $this->xpath->evaluate("attribute::*[name()='full_path']", $node)->item(0)->value;
     $full_path = strcasecmp($full_path, 'true') == 0 ? TRUE : FALSE;
     $xpath_form_control = $this->DefaultFormControlValueFunction($name, $node);
+    if($xpath_form_control['#xpath'] == NULL) {
+      $xpath_form_control['#xpath'] = '';
+    }
     return array_merge($xpath_form_control, array('#xpath_full' => $full_path));
   }
   /**

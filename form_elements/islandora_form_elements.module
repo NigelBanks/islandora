@@ -159,9 +159,18 @@ function ife_tabpanel_process($element,$edit,&$form_state)
   $element['#tree'] = TRUE;
   $element['#prefix'] = '<div class="clear-block" id="' . $wrapper . '">';
   $element['#suffix'] = '</div>';
+
+  $xpath = $element['#xpath'];
+  $xpath_full = $element['#xpath_full'];
+  unset($element['#xpath']);
+  unset($element['#xpath_full']);
+
   $element['content']['#title'] = $element['#title'];
   $element['content']['#theme'] = 'tabpanel_items';
   $element['content']['#name'] = $name;
+  $element['content'][0]['#xpath'] = $xpath;
+  $element['content'][0]['#xpath_full'] = $xpath_full;
+  $element['content'][0]['#xpath_index'] = 1;
   $element['content'][0]['add-tab'] = array(
     '#type' => 'submit',
     '#weight' => 4, 
@@ -178,6 +187,9 @@ function ife_tabpanel_process($element,$edit,&$form_state)
   );
   $count = 1; // Can't remove the first one.
   while($element['content'][$count]) {
+    $element['content'][$count]['#xpath'] = $xpath;
+    $element['content'][$count]['#xpath_full'] = $xpath_full;
+    $element['content'][$count]['#xpath_index'] = $count + 1;
     $element['content'][$count]['remove-tab'] = array(
     '#type' => 'submit',
     '#weight' => 4, 
