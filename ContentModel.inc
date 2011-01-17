@@ -1213,10 +1213,28 @@ class ContentModel extends XMLDatastream {
    *   Returns the DOMElement 'content_model' if it exists, otherwise it returns
    *   FALSE.
    */
-  private function getContentModel() {
+  private function getContentModelElement() {
     $result = $this->xml->getElementsByTagName('content_model');
     if ($result && $result->length == 1) {
       return $result->item(0);
+    }
+    return FALSE;
+  }
+
+  /**
+   * Gets the 'forms' DOMElement from the content model's XML repersentation.
+   *
+   * @return DOMElement
+   *   Returns the DOMElement 'forms' if it exists, otherwise it returns
+   *   FALSE.
+   */
+  private function getFormsElement() {
+    $content_model = $this->getContentModelElement();
+    if ($content_model) {
+      $result = $content_model->getElementsByTagName('forms');
+      if ($result && $result->length == 1) {
+        return $result->item(0);
+      }
     }
     return FALSE;
   }
@@ -1228,8 +1246,8 @@ class ContentModel extends XMLDatastream {
    *   Returns the DOMElement 'edit_form' if it exists, otherwise it returns
    *   FALSE.
    */
-  private function getEditForm() {
-    $content_model = $this->getContentModel();
+  private function getEditFormElement() {
+    $content_model = $this->getContentModelElement();
     if ($content_model) {
       $result = $content_model->getElementsByTagName('edit_form');
       if ($result && $result->length == 1) {
@@ -1246,12 +1264,78 @@ class ContentModel extends XMLDatastream {
    *   Returns the DOMElement 'form_builder_method' if it exists, otherwise it returns
    *   FALSE.
    */
-  private function getEditFormBuildingMethod() {
-    $edit_form = $this->getEditForm();
+  private function getEditFormBuildingMethodElement() {
+    $edit_form = $this->getEditFormElement();
     if ($edit_form) {
       $result = $edit_form->getElementsByTagName('form_builder_method');
       if ($result && $result->length == 1) {
         return $result->item(0);
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Adds a new form element with attribute name='$name' to the 'forms' element.
+   *
+   * @param String $name
+   */
+  public function addForm($name) {
+    if (!$this->validate()) {
+      return FALSE;
+    }
+    $forms = $this->getFormsElement();
+    if ($forms) {
+      $form = $this->xml->createElement('form');
+      $form->setAttribute('name', $name);
+      $forms->appendChild($form);
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Removes a form element with attribute name='$name' from the 'forms' element.
+   *
+   * @param String $name
+   */
+  public function removeForm($name) {
+    if (!$this->validate()) {
+      return FALSE;
+    }
+    $forms = $this->getFormsElement();
+    if ($forms) {
+      $children = $forms->getElementsByTagName('form');
+      for ($i = 0; $i < $children->length; $i++) {
+        $child = $children->item($i);
+        if ($child->getAttribute('name') == $name) {
+          $forms->removeChild($child);
+          return TRUE;
+        }
+      }
+    }
+    return FALSE;
+  }
+
+
+  /**
+   * Edits a form element with attribute name='$name' from the 'forms' element.
+   *
+   * @param String $name
+   */
+  public function editForm($name, $new_name) {
+    if (!$this->validate()) {
+      return FALSE;
+    }
+    $forms = $this->getFormsElement();
+    if ($forms) {
+      $children = $forms->getElementsByTagName('form');
+      for ($i = 0; $i < $children->length; $i++) {
+        $child = $children->item($i);
+        if ($child->getAttribute('name') == $name) {
+          $forms->setAttribute('name', $new_name);
+          return TRUE;
+        }
       }
     }
     return FALSE;
@@ -1266,7 +1350,7 @@ class ContentModel extends XMLDatastream {
     if (!$this->validate()) {
       return FALSE;
     }
-    $method = $this->getEditFormBuildingMethod();
+    $method = $this->getEditFormBuildingMethodElement();
     if ($method) {
       return array('module' => $method->getAttribute('module') == '' ? 'fedora_repository' : $method->getAttribute('module'),
         'file' => $method->getAttribute('file'),
@@ -1287,7 +1371,7 @@ class ContentModel extends XMLDatastream {
     if (!$this->validate()) {
       return FALSE;
     }
-    $method = $this->getEditFormBuildingMethod();
+    $method = $this->getEditFormBuildingMethodElement();
     if ($method) {
       $method->parentNode->removeChild($method);
       return TRUE;
@@ -1310,7 +1394,7 @@ class ContentModel extends XMLDatastream {
       return FALSE;
     }
     $this->removeEditMetadataMethod();
-    $edit_form = $this->getEditForm();
+    $edit_form = $this->getEditFormElement();
     if ($edit_form) {
       $form_builder_method = $this->xml->createElement('form_builder_method');
       if ($form_builder_method) {
@@ -1501,7 +1585,7 @@ class ContentModel extends XMLDatastream {
    * @return string[] $mimetypes
    */
   public function getMimetypes() {
-    //only proceed if the xml is valid.
+//only proceed if the xml is valid.
     if ($this->validate()) {
       if ($this->mimes === NULL) {
         $result = $this->xml->getElementsByTagName('mimetypes');
