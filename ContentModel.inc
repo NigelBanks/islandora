@@ -1207,26 +1207,76 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
+   * Gets the 'content_model' DOMElement from the content model's XML repersentation.
+   * 
+   * @return DOMElement
+   *   Returns the DOMElement 'content_model' if it exists, otherwise it returns
+   *   FALSE.
+   */
+  private function getContentModel() {
+    $result = $this->xml->getElementsByTagName('content_model');
+    if ($result && $result->length == 1) {
+      return $result->item(0);
+    }
+    return FALSE;
+  }
+
+  /**
+   * Gets the 'edit_form' DOMElement from the content model's XML repersentation.
+   *
+   * @return DOMElement
+   *   Returns the DOMElement 'edit_form' if it exists, otherwise it returns
+   *   FALSE.
+   */
+  private function getEditForm() {
+    $content_model = $this->getContentModel();
+    if ($content_model) {
+      $result = $content_model->getElementsByTagName('edit_form');
+      if ($result && $result->length == 1) {
+        return $result->item(0);
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * Gets the 'form_builder_method' DOMElement from 'edit_form' DOMElement.
+   *
+   * @return DOMElement
+   *   Returns the DOMElement 'form_builder_method' if it exists, otherwise it returns
+   *   FALSE.
+   */
+  private function getEditFormBuildingMethod() {
+    $edit_form = $this->getEditForm();
+    if ($edit_form) {
+      $result = $edit_form->getElementsByTagName('form_builder_method');
+      if ($result && $result->length == 1) {
+        return $result->item(0);
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Gets an associative array describing the edit metadata method.
    * Array has the following keys: 'file', 'class', 'method', 'handler', 'dsid'
    * @return String[] $method
    */
   public function getEditMetadataMethod() {
-    $ret = FALSE;
-    if ($this->validate()) {
-      $method = $this->xml->getElementsByTagName('content_model')->item(0)->getElementsByTagName('edit_metadata_method');
-      if ($method->length > 0) {
-        $method = $method->item(0);
-        $ret = array('module' => $method->getAttribute('module') == '' ? 'fedora_repository' : $method->getAttribute('module'),
-          'file' => $method->getAttribute('file'),
-          'class' => $method->getAttribute('class'),
-          'method' => $method->getAttribute('method'),
-          'handler' => $method->getAttribute('handler'),
-          'dsid' => $method->getAttribute('dsid')
-        );
-      }
+    if (!$this->validate()) {
+      return FALSE;
     }
-    return $ret;
+    $method = $this->getEditFormBuildingMethod();
+    if ($method) {
+      return array('module' => $method->getAttribute('module') == '' ? 'fedora_repository' : $method->getAttribute('module'),
+        'file' => $method->getAttribute('file'),
+        'class' => $method->getAttribute('class'),
+        'method' => $method->getAttribute('method'),
+        'handler' => $method->getAttribute('handler'),
+        'dsid' => $method->getAttribute('dsid')
+      );
+    }
+    return FALSE;
   }
 
   /**
@@ -1234,16 +1284,15 @@ class ContentModel extends XMLDatastream {
    * @return boolean $success
    */
   public function removeEditMetadataMethod() {
-    $ret = FALSE;
-    if ($this->validate()) {
-      $rootEl = $this->xml->getElementsByTagName('content_model')->item(0);
-      $method = $rootEl->getElementsByTagName('edit_metadata_method');
-      if ($method->length > 0) {
-        $rootEl->removeChild($method->item(0));
-        $ret = TRUE;
-      }
+    if (!$this->validate()) {
+      return FALSE;
     }
-    return $ret;
+    $method = $this->getEditFormBuildingMethod();
+    if ($method) {
+      $method->parentNode->removeChild($method);
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**
@@ -1257,25 +1306,25 @@ class ContentModel extends XMLDatastream {
    * @return boolean $success
    */
   public function updateEditMetadataMethod($module, $file, $class, $method, $handler, $dsid) {
-    $ret = FALSE;
-    if (self::validDsid($dsid) && $this->validate()) {
-      $methodEl = $this->xml->getElementsByTagName('content_model')->item(0)->getElementsByTagName('edit_metadata_method');
-      if ($methodEl->length > 0) {
-        $methodEl = $methodEl->item(0);
-      }
-      else {
-        $methodEl = $this->xml->createElement('edit_metadata_method');
-        $this->xml->getElementsByTagName('content_model')->item(0)->appendChild($methodEl);
-      }
-      $methodEl->setAttribute('module', $module);
-      $methodEl->setAttribute('file', $file);
-      $methodEl->setAttribute('class', $class);
-      $methodEl->setAttribute('method', $method);
-      $methodEl->setAttribute('handler', $handler);
-      $methodEl->setAttribute('dsid', $dsid);
-      $ret = TRUE;
+    if (!self::validDsid($dsid) || !$this->validate()) {
+      return FALSE;
     }
-    return $ret;
+    $this->removeEditMetadataMethod();
+    $edit_form = $this->getEditForm();
+    if ($edit_form) {
+      $form_builder_method = $this->xml->createElement('form_builder_method');
+      if ($form_builder_method) {
+        $edit_form->appendChild($form_builder_method);
+        $form_builder_method->setAttribute('module', $module);
+        $form_builder_method->setAttribute('file', $file);
+        $form_builder_method->setAttribute('class', $class);
+        $form_builder_method->setAttribute('method', $method);
+        $form_builder_method->setAttribute('handler', $handler);
+        $form_builder_method->setAttribute('dsid', $dsid);
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 
   /**

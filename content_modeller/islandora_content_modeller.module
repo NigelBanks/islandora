@@ -344,12 +344,13 @@ function icm_ajax_model_tree() {
       }
 
       $attr = $cm->getIngestFormAttributes();
-      $ingestFormEl = $modelTree->addChild('Ingest Form<br/>(dsid: <b>' . $attr['dsid'] . '</b> page: <b>' . $attr['page'] . '</b> file_chooser: <b>' . ($attr['hide_file_chooser'] ? 'hidden' : 'visible') . '</b> )', 'folder',
+      $ingestFormEl = $modelTree->addChild('Ingest Form Method<br/>(dsid: <b>' . $attr['dsid'] . '</b> page: <b>' . $attr['page'] . '</b> file_chooser: <b>' . ($attr['hide_file_chooser'] ? 'hidden' : 'visible') . '</b> )', 'folder',
               '  <img src="' . $moduleRoot . '/images/edit.gif" class="ajaxFormIcon" id="icm_model_edit_ingestForm icm_model_edit_ingestForm ' . $cm->pid . ' ' . $attr['dsid'] . ' ' . $attr['page'] . ' ' . ($attr['hide_file_chooser'] ? 'true' : 'false') . '"/>');
 
       $builderMethod = $cm->getIngestFormBuilderMethod();
       $ingestFormEl->addChild($builderMethod['file'] . '<br/>Builder: ' . $builderMethod['class'] . '->' . $builderMethod['method'] . '<br/>Handler: ' . $builderMethod['class'] . '->' . $builderMethod['handler'], 'file');
 
+      /* Nigelb - edit Form elements are no longer stored in the ingest form section
       $elementsEl = $ingestFormEl->addChild('Form Elements', 'folder', '  <img src="' . $moduleRoot . '/images/add.png" class="ajaxFormIcon" id="icm_model_add_ingestFormElement ' . $cm->pid . '"/>');
 
       if (($elements = $cm->getIngestFormElements()) !== false) {
@@ -397,7 +398,7 @@ function icm_ajax_model_tree() {
 
           $j++;
         }
-      }
+      }*/
 
       $addIcon = '';
       $metadataMethod = $cm->getEditMetadataMethod();
