@@ -1333,7 +1333,7 @@ class ContentModel extends XMLDatastream {
       for ($i = 0; $i < $children->length; $i++) {
         $child = $children->item($i);
         if ($child->getAttribute('name') == $name) {
-          $forms->setAttribute('name', $new_name);
+          $child->setAttribute('name', $new_name);
           return TRUE;
         }
       }

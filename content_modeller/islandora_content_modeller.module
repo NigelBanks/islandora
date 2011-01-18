@@ -78,6 +78,11 @@ function islandora_content_modeller_menu() {
     'type' => MENU_CALLBACK
   );
 
+  $items['admin/content/modeller/ajax/element/properties'] = array(
+    'page callback' => 'icm_ajax_element_properties',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_CALLBACK
+  );
   return $items;
 }
 
@@ -558,6 +563,22 @@ function islandora_content_modeller_main() {
   drupal_add_js($moduleRoot . '/js/content_modeller.js');
   drupal_add_js($moduleRoot . '/js/jquery.jnotify.js');
 
+  // Setup ahah settings for forms that may be generated in the future. Add each ahah event here.
+  drupal_add_js($moduleRoot . '/js/ahah.js');
+  drupal_add_js('misc/jquery.form.js');
+  drupal_add_js('misc/ahah.js');
+  $ahah_binding = array(
+    'url' => url('admin/content/modeller/ajax/element/properties'),
+    'event' => 'change',
+    'wrapper' => 'icm-element-properties-wrapper',
+    'selector' => '#edit-form-type',
+    'effect' => 'fade',
+    'method' => 'replace',
+    'progress' => array('type' => 'throbber'),
+    'button' => FALSE,
+  );
+  drupal_add_js(array('ahah' => array('edit-form-type' => $ahah_binding)), 'setting');
+
   $moduleRoot = $base_url . '/' . $moduleRoot;
 
   $content = '<div class="contentModeller">';
@@ -590,7 +611,7 @@ function islandora_content_modeller_main() {
 function icm_ajax_formExists($formName) {
   $validForms = array('icm_collection_new', 'icm_collection_edit', 'icm_collection_purge', 'icm_model_new', 'icm_model_purge', 'icm_model_edit_ingestForm', 'icm_model_add_mime', 'icm_collection_add_term', 'icm_collection_add_cmodel', 'icm_model_add_ingestMethodParam', 'icm_model_add_ingestMethod', 'icm_model_add_ingestRule', 'icm_model_add_appliesTo',
     'icm_model_add_ds', 'icm_model_add_dispmeth', 'icm_model_add_ingestFormElement', 'icm_model_edit_ingestFormElement', 'icm_model_add_authListItem', 'icm_model_update_editMetadataMethod', 'icm_model_rollback', 'icm_collection_rollback', 'icm_display_rawXml', 'icm_model_add_ingestElementParam',
-    'icm_model_edit_adddsmeth', 'icm_model_service_add', 'icm_model_add_form', 'icm_model_edit_form');
+    'icm_model_edit_adddsmeth', 'icm_model_service_add', 'icm_model_add_form', 'icm_model_add_element_to_form', 'icm_model_edit_form');
   return in_array($formName, $validForms);
 }
 
@@ -2788,6 +2809,8 @@ function icm_show_forms_tree($model_tree, $module_root, $content_model) {
   foreach ($form_names as $name) {
     $icons = "<img src='$module_root/images/remove.png' class='ajaxButtonIcon' id='icm_model_remove_form $content_model->pid $name'/>";
     $icons .= " ";
+    $icons .= "<img src='$module_root/images/add.png' class='ajaxFormIcon' id='icm_model_add_element_to_form $content_model->pid $name'/>";
+    $icons .= " ";
     $icons .= "<img src='$module_root/images/edit.gif' class='ajaxFormIcon' id='icm_model_edit_form $content_model->pid $name'/>";
     $forms->addChild("<b>Form: $name</b> ", 'folder', $icons);
   }
@@ -2821,7 +2844,6 @@ function icm_model_add_form_name_validate($element, &$form_state) {
  * @param <type> $form_state 
  */
 function icm_model_add_form_submit($form, &$form_state) {
-  //only proceed if no errors have been found.
   if (form_get_errors() !== NULL)
     return;
   module_load_include('inc', 'fedora_repository', 'ContentModel');
@@ -2840,8 +2862,8 @@ function icm_model_add_form_submit($form, &$form_state) {
 
 /**
  *
- * @param <type> $form_state
- * @param <type> $params
+ * @param Array $form_state
+ * @param Array $params
  */
 function icm_model_add_form(&$form_state, $params=null) {
   if (is_array($params)) {
@@ -2875,7 +2897,6 @@ function icm_model_add_form(&$form_state, $params=null) {
  * @param Array $form_state 
  */
 function icm_model_edit_form_submit($form, &$form_state) {
-  //only proceed if no errors have been found.
   if (form_get_errors() !== NULL)
     return;
   module_load_include('inc', 'fedora_repository', 'ContentModel');
@@ -2904,6 +2925,7 @@ function icm_model_edit_form(&$form_state, $params=null) {
   }
   else {
     $model_pid = $form_state['post']['form']['model_pid'];
+    $name = $form_state['post']['form']['name'];
   }
   $form['form'] = array(
     '#type' => 'fieldset',
@@ -2943,6 +2965,109 @@ function icm_model_remove_form($params) {
   }
   echo t('Error: Unable to remove form <b>%name</b> from model <b>%model_pid</b>.', array('%name' => $name, '%model_pid' => $model_pid));
   exit();
+}
+
+/**
+ *
+ * @param Array $form_state
+ * @param Array $params
+ * @return Array
+ */
+function icm_model_add_element_to_form(&$form_state, $params=null) {
+  if (is_array($params)) {
+    $model_pid = $params[0];
+    $name = $params[0];
+  }
+  else {
+    $model_pid = $form_state['post']['form']['model_pid'];
+    $name = $form_state['post']['form']['model_pid'];
+  }
+  $wrapper = 'icm-element-properties-wrapper';
+  $form['form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add element to form <b>%name</b>', array('%name' => $name)),
+    '#tree' => TRUE,
+  );
+  $form['form']['type'] = array(
+    '#type' => 'select',
+    '#title' => t('Choose element type'),
+    '#tree' => TRUE,
+    '#options' => array(
+      'fieldset' => 'fieldset',
+      'tabpanel' => 'tabpanel',
+      'textfield' => 'textfield',
+      'textarea' => 'textarea',
+      'list' => 'list',
+      'checkbox' => 'checkbox',
+    ),
+    '#ahah' => array(
+      'path' => 'admin/content/modeller/ajax/element/properties',
+      'event' => 'change',
+      'wrapper' => $wrapper,
+      'method' => 'replace',
+      'effect' => 'fade'
+    ),
+  );
+  $form['form']['element_properties'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Form Element Properties'),
+    '#prefix' => "<div id='$wrapper'>",
+    '#suffix' => '</div>',
+    '#tree' => TRUE,
+  );
+  $form['form']['element_properties']['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('title'),
+    '#size' => 30,
+    '#required' => TRUE,
+    '#description' => t('The title of the form element.'),
+  );
+  $form['form']['model_pid'] = array('#type' => 'hidden', '#value' => $model_pid);
+  $form['form']['name'] = array('#type' => 'hidden', '#value' => $name);
+  $form['form']['submit'] = array('#type' => 'submit', '#value' => t('Save'));
+  $form['form']['cancel'] = array('#type' => 'button', '#value' => t('Cancel'), '#id' => 'cancel');
+  return $form;
+}
+
+function icm_model_get_element_form($element_type) {
+  $form['element_properties'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Form Element Properties'),
+    '#prefix' => '<div id="icm-element-properties-wrapper">',
+    '#suffix' => '</div>',
+    '#tree' => TRUE,
+  );
+  switch ($element_type) {
+    case 'textfield':
+      $form['element_properties']['title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('title'),
+        '#size' => 30,
+        '#required' => TRUE,
+        '#description' => t('The title of the form element.'),
+      );
+      break;
+  }
+  return $form;
+}
+
+function icm_ajax_element_properties() {
+  if (!isset($_POST['form_build_id']))
+    return;
+  $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => $_POST);
+  $form_build_id = $_POST['form_build_id'];
+  if (!$form = form_get_cache($form_build_id, $form_state))
+    exit();
+  $form['element_properties'] = icm_model_get_element_form('textfield');
+  $form_id = $form['#parameters'][0];
+  $form['#post'] = $_POST;
+  $form['#programmed'] = FALSE;
+  form_set_cache($form_build_id, $form, $form_state);
+  $form = form_builder($form_id, $form, $form_state);
+  drupal_json(array(
+    'status' => TRUE,
+    'data' => theme('status_messages') . drupal_render($form['element_properties']),
+  ));
 }
 
 /**
