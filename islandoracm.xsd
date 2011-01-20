@@ -37,6 +37,7 @@
 	<xsd:complexType name="ingest_formType">
 		<xsd:sequence>
 			<xsd:element name="form_builder_method" type="form_builder_methodType"/>
+			<xsd:element name="form_elements" type="form_elementsType"/>
 		</xsd:sequence>
 		<xsd:attribute name="dsid" type="xsd:normalizedString" use="required"/>
 		<xsd:attribute name="page" type="xsd:positiveInteger" use="required"/>
@@ -387,5 +388,33 @@
 		<xsd:sequence>
 			<xsd:element maxOccurs="unbounded" name="item" type="xsd:normalizedString"/>
 		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="form_elementsType">
+		<xsd:sequence>
+			<xsd:element maxOccurs="unbounded" minOccurs="0" name="element" type="elementType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="elementType">
+		<xsd:all>
+			<xsd:element minOccurs="0" name="description" type="xsd:string"/>
+			<xsd:element minOccurs="0" name="authoritative_list" type="authoritative_listType"/>
+			<xsd:element minOccurs="0" name="parameters" type="parametersType"/>
+		</xsd:all>
+		<xsd:attribute name="label" type="xsd:normalizedString"/>
+		<xsd:attribute name="name" type="xsd:normalizedString" use="required"/>
+		<xsd:attribute name="type" type="xsd:normalizedString" use="required"/>
+		<xsd:attribute default="false" name="required" type="xsd:boolean"/>
+	</xsd:complexType>
+	<xsd:complexType name="authoritative_listType">
+		<xsd:sequence>
+			<xsd:element maxOccurs="unbounded" minOccurs="1" name="item" type="itemType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+	<xsd:complexType name="itemType">
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="field" type="xsd:string" use="optional"/>
+			</xsd:extension>
+		</xsd:simpleContent>
 	</xsd:complexType>
 </xsd:schema>

@@ -1240,6 +1240,30 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
+   * Gets the named form DOMElement from the 'forms' DOMElement.
+   *
+   * @param String $name
+   *   The name of the form to get.
+   * 
+   * @return DOMElement
+   *   Returns the named DOMElement 'form' if it exists, otherwise it returns
+   *   FALSE.
+   */
+  private function getFormElement($name) {
+    $forms = $this->getFormsElement();
+    if ($forms) {
+      $children = $forms->getElementsByTagName('form');
+      for ($i = 0; $i < $children->length; $i++) {
+        $child = $children->item($i);
+        if ($child->getAttribute('name') == $name) {
+          return $child;
+        }
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Gets the 'edit_form' DOMElement from the content model's XML repersentation.
    *
    * @return DOMElement
@@ -1317,7 +1341,6 @@ class ContentModel extends XMLDatastream {
     return FALSE;
   }
 
-
   /**
    * Edits a form element with attribute name='$name' from the 'forms' element.
    *
@@ -1338,6 +1361,21 @@ class ContentModel extends XMLDatastream {
         }
       }
     }
+    return FALSE;
+  }
+
+  /**
+   * Appends a element to the named form.
+   *
+   * @param Array $element_definition
+   *   A drupal style form definition, without the hashs.
+   * @param String $form_name
+   *   The name of the form element to modify.
+   * @return Boolean
+   *   TRUE if successful False otherwise.
+   */
+  public function addElementToForm($element_definition, $form_name) {
+
     return FALSE;
   }
 
