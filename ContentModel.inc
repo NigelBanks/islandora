@@ -1374,7 +1374,9 @@ class ContentModel extends XMLDatastream {
    * @return Boolean
    *   TRUE if successful False otherwise.
    */
-  public function addElementToForm($element_definition, $form_name) {
+  public function addElementToForm($element_definition, $form_name, $parameters) {
+    $form = $this->getFormElement($form_name);
+
 
     return FALSE;
   }

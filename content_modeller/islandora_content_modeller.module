@@ -7,6 +7,8 @@
  * Description goes here
  */
 
+module_load_include('inc', 'islandora_content_modeller', 'includes/FormTree');
+
 global $base_url;
 define('AHAH_WRAPPER', 'icm-element-properties-wrapper');
 define('MODULE_ROOT', $base_url . '/' . drupal_get_path('module', 'islandora_content_modeller'));
@@ -351,7 +353,8 @@ function icm_ajax_model_tree() {
           }
         }
       }
-      icm_show_forms_tree($modelTree, $cm);
+      $form_tree = new FormTree($cm);
+      $form_tree->attachFormsToTree($modelTree);
 
       $attr = $cm->getIngestFormAttributes();
       $ingestFormEl = $modelTree->addChild('Ingest Form Method<br/>(dsid: <b>' . $attr['dsid'] . '</b> page: <b>' . $attr['page'] . '</b> file_chooser: <b>' . ($attr['hide_file_chooser'] ? 'hidden' : 'visible') . '</b> )', 'folder',
@@ -2893,6 +2896,28 @@ function icm_get_form_element_icons($model_pid, $form_name, $form_element) {
   return $icons;
 }
 
+function icm_model_remove_form_element() {
+
+}
+
+
+function icm_model_add_form_element_validate() {
+
+}
+
+function icm_model_add_form_element_submit() {
+
+}
+
+
+function icm_model_edit_form_element_validate() {
+
+}
+
+function icm_model_edit_form_element_submit() {
+
+}
+
 /**
  *
  * @param <type> $model_tree
@@ -3124,6 +3149,7 @@ function icm_model_add_element_to_form(&$form_state, $params=null) {
     ),
   );
   $form['form']['element_properties'] = icm_model_get_element_form($form['form']['type']['#options'][0]);
+  $form['form']['submit_parameters'] = array('#type' => 'hidden', '#value' => $params);
   $form['form']['model_pid'] = array('#type' => 'hidden', '#value' => $model_pid);
   $form['form']['name'] = array('#type' => 'hidden', '#value' => $name);
   $form['form']['submit'] = array('#type' => 'submit', '#value' => t('Save'));
@@ -3143,10 +3169,11 @@ function icm_model_add_element_to_form_submit($form, &$form_state) {
   $model_pid = trim($form_state['values']['form']['model_pid']);
   $content_model = ContentModel::loadFromModel($model_pid);
   $form_name = $form_state['values']['form']['name'];
+  $parameters = $form_state['values']['form']['submit_parameters'];
   $element_type = $form_state['values']['form']['type'];
   $element_properties = $form_state['values']['form']['element_properties'];
   $element_definition = icm_model_create_element_definition_from_form_values($element_type, $element_properties);
-  if ($content_model->addElementToForm($element_definition, $form_name) && $content_model->saveToFedora()) {
+  if ($content_model->addElementToForm($element_definition, $form_name, $parameters) && $content_model->saveToFedora()) {
     echo t('Success: Successfully added a <b>%type_name</b> to <b>%form_name</b>.', array('%type_name' => $element_type, '%form_name' => $form_name));
     exit();
   }
