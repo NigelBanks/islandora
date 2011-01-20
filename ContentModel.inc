@@ -1249,7 +1249,7 @@ class ContentModel extends XMLDatastream {
    *   Returns the named DOMElement 'form' if it exists, otherwise it returns
    *   FALSE.
    */
-  private function getFormElement($name) {
+  public function getFormElement($name) {
     $forms = $this->getFormsElement();
     if ($forms) {
       $children = $forms->getElementsByTagName('form');
