@@ -5,6 +5,7 @@
 /**
  * @file
  */
+module_load_include('inc', 'fedora_repository', 'ContentModel');
 
 /**
  *
@@ -36,11 +37,32 @@ class FormTree {
 
   /**
    *
-   * @param <type> $icon
-   * @param <type> $is_form
-   * @param <type> $function
-   * @param <type> $params
-   * @return <type>
+   * @param <type> $element
+   * @param <type> $form_state
+   */
+  public static function validateFormName($element, &$form_state) {
+    if (form_get_errors() !== NULL)
+      return;
+    module_load_include('inc', 'fedora_repository', 'ContentModel');
+    $model_pid = trim($form_state['values']['form']['model_pid']);
+    $content_model = ContentModel::loadFromModel($model_pid);
+    $form_names = $content_model->getFormNames();
+    $name = trim($element['#value']);
+    foreach ($form_names as $value) {
+      if ($name == $value) {
+        form_error($element, t('Error: The specified name <b>%name</b> is already in use.', array('%name' => $name)));
+        return;
+      }
+    }
+  }
+
+  /**
+   *
+   * @param String $icon
+   * @param Boolean $is_form
+   * @param String $function
+   * @param Array $params
+   * @return HTML
    */
   function icon($icon, $is_form, $function, $params) {
     $class = ($is_form) ? 'ajaxFormIcon' : 'ajaxButtonIcon';
@@ -48,50 +70,85 @@ class FormTree {
     return "<img src='" . $this->moduleRoot . "/images/$icon' class='$class' id='$function $arguments'/>" . " ";
   }
 
+  /**
+   *
+   * @param String $form_name
+   * @return HTML
+   */
   function getFormIcons($form_name) {
     $params = array($this->contentModel->pid, $form_name);
-    $icons = icon('remove.png', FALSE, 'icm_model_remove_form', $params);
-    $icons .= icon('add.png', TRUE, 'icm_model_add_element_to_form', $params);
-    $icons .= icon('blue_up.png', FALSE, 'icm_model_inc_form_element', $params);
-    $icons .= icon('blue_down.png', FALSE, 'icm_model_dec_form_element', $params);
-    $icons .= icon('edit.gif', TRUE, 'icm_model_edit_form', $params);
+    $icons = icon('remove.png', FALSE, 'icm_remove_form', $params);
+    $icons .= icon('add.png', TRUE, 'icm_add_form_element', $params);
+    $icons .= icon('blue_up.png', FALSE, 'icm_inc_form', $params);
+    $icons .= icon('blue_down.png', FALSE, 'icm_dec_form', $params);
+    $icons .= icon('edit.gif', TRUE, 'icm_edit_form', $params);
     return $icons;
   }
 
+  /**
+   *
+   * @param String $form_name
+   * @param DOMElement $form_element
+   * @return HTML
+   */
   function getFormElementIcons($form_name, $form_element) {
     $path_from_form_node = array_reverse($this->getPathToFormElement($form_element));
     $params = array($this->contentModel->pid, $form_name, implode(' ', $path_from_form_node));
-    $icons = icon('remove.png', FALSE, 'icm_model_remove_form_element', $params);
-    $icons .= icon('add.png', TRUE, 'icm_model_add_form_element', $params);
-    $icons .= icon('blue_up.png', FALSE, 'icm_model_add_form_element', $params);
-    $icons .= icon('blue_down.png', FALSE, 'icm_model_add_form_element', $params);
-    $icons .= icon('edit.gif', TRUE, 'icm_model_edit_form_element', $params);
+    $icons = icon('remove.png', FALSE, 'icm_remove_form_element', $params);
+    $result = $form_element->getElementsByTagName('content');
+    if ($result && $result->length) {
+      $content = $result->item(0);
+      $path_to_content = array_reverse($this->getPathToFormElement($content));
+      $add_params = array($this->contentModel->pid, $form_name, implode(' ', $path_to_content));
+      $icons .= icon('add.png', TRUE, 'icm_add_form_element', $add_params);
+    }
+    $icons .= icon('blue_up.png', FALSE, 'icm_inc_form_element', $params);
+    $icons .= icon('blue_down.png', FALSE, 'icm_dec_form_element', $params);
+    $icons .= icon('edit.gif', TRUE, 'icm_edit_form_element', $params);
     return $icons;
   }
 
+  /**
+   *
+   * @param TreeView $model_tree
+   */
   public function attachFormsToTree($model_tree) {
-    $icons = $this->icon('add.png', TRUE, 'icm_model_add_form', array($this->contentModel->pid));
+    $icons = $this->icon('add.png', TRUE, 'icm_add_form', array($this->contentModel->pid));
     $forms_tree_node = $model_tree->addChild('Forms', 'folder', $icons);
     $this->attachEachFormToTree($forms_tree_node);
   }
 
+  /**
+   *
+   * @param TreeView $model_tree
+   */
   private function attachEachFormToTree($model_tree) {
     $form_names = $this->contentModel->getFormNames();
     foreach ($form_names as $name) {
-      $icons = $this->getFormIcons($form_name);
+      $icons = $this->getFormIcons($name);
       $form_tree_node = $model_tree->addChild("<b>Form: $name</b> ", 'folder', $icons);
       $form = $this->contentModel->getFormElement($name);
       $this->attachEachFormElementToTree($name, $form, $form_tree_node);
     }
   }
 
+  /**
+   *
+   * @param String $form_name
+   * @param DOMElement $form_element
+   * @param TreeView $model_tree
+   */
   private function attachEachFormElementToTree($form_name, $form_element, $model_tree) {
-    $this->forEachChildElementDo($form_element, 'attachFormElementToTree', array($form_name, $model_tree));
+    $this->forEachChildElementDo($form_element, 'attachFormElementToTree', array(&$form_name, &$model_tree));
   }
 
-  private function attachFormElementToTree($child, $params) {
-    $form_name = $params[0];
-    $model_tree = $params[1];
+  /**
+   *
+   * @param DOMElement $child
+   * @param String $form_name
+   * @param TreeView $model_tree
+   */
+  private function attachFormElementToTree($child, &$form_name, &$model_tree) {
     $name = $child->tagName;
     $title = $child->getElementsByTagName('title')->item(0)->textContent;
     $icons = $this->getFormElementIcons($form_name, $child);
@@ -102,23 +159,35 @@ class FormTree {
     }
   }
 
-  private function forEachChildElementDo($element, $function, $params = NULL) {
+  /**
+   *
+   * @param DOMElement $element
+   * @param String $function
+   * @param Array $params
+   */
+  private function forEachChildElementDo($element, $function, $params) {
     if (!method_exists($this, $function))
       return FALSE;
     $children = $element->childNodes;
+    array_unshift($params, &$element); // Dummy placeholder for each child.
     for ($i = 0; $i < $children->length; $i++) {
       $child = $children->item($i);
       if (get_class($child) != 'DOMElement') {
         continue;
       }
-      call_user_func(array($this, $function), $child, $params);
+      $params[0] = &$child;
+      call_user_func_array(array($this, $function), $params);
     }
   }
 
-  private function findChildIndex($child, $params) {
-    $form_element = &$params[0];
-    $count = &$params[1];
-    $found = &$params[2];
+  /**
+   *
+   * @param DOMElement $child
+   * @param DOMElement $form_element
+   * @param int $count
+   * @param Boolean $found
+   */
+  private function findChildIndex(&$child, &$form_element, &$count, &$found) {
     if (!$found) {
       if ($child->isSameNode($form_element)) {
         $found = TRUE;
@@ -129,6 +198,50 @@ class FormTree {
     }
   }
 
+  /**
+   *
+   * @param DOMElement $child
+   * @param Array $path
+   * @param int $count
+   * @param DOMElement $element
+   */
+  private function findFormElement($child, &$index, &$count, &$element) {
+    if ($index == $count) {
+      $element = $child;
+    }
+    $count++;
+  }
+
+  /**
+   *
+   * @param String $form_name
+   * @param Array $path
+   * @return DOMElement
+   */
+  private function findFormElementFromPath($form_name, $path) {
+    $form = $this->contentModel->getFormElement($form_name);
+    $form_element = $form;
+    $path = explode(' ', $path);
+    while (true) {
+      $index = array_shift($path);
+      if (isset($index) && $index != '') {
+        $count = 0;
+        $child_element = ''; // Place holder
+        $this->forEachChildElementDo($form_element, 'findFormElement', array(&$index, &$count, &$child_element));
+        $form_element = $child_element;
+      }
+      else {
+        break;
+      }
+    }
+    return $form_element;
+  }
+
+  /**
+   *
+   * @param DOMElement $form_element
+   * @return int
+   */
   private function getIndexOfChildInParent($form_element) {
     $count = 0;
     $found = FALSE;
@@ -136,11 +249,555 @@ class FormTree {
     return $count;
   }
 
-  private function getPathToFormElement($form_element) {    
+  /**
+   *
+   * @param DOMElement $form_element
+   * @return Array
+   */
+  private function getPathToFormElement($form_element) {
     $path[] = $this->getIndexOfChildInParent($form_element);
     if ($form_element->parentNode->tagName != 'form') {
       $path = array_merge($path, $this->getPathToFormElement($form_element->parentNode));
     }
     return $path;
   }
+
+  /**
+   *
+   * @param String $type
+   * @param Array $element_properties
+   * @return Array
+   */
+  private function getElementDefinition($type, $element_properties) {
+    $definition['type'] = $type;
+    foreach ($element_properties as $name => $value) {
+      $definition[$name] = $value;
+    }
+    return $definition;
+  }
+
+  /**
+   * Removes a form from the content model.
+   *
+   * @param String $form_name
+   * @return TRUE if successful, False otherwise
+   */
+  public function removeForm($form_name) {
+    $result = $this->contentModel->removeForm($form_name);
+    return $result && $this->contentModel->saveToFedora();
+  }
+
+  /**
+   * Removes a form from the content model.
+   *
+   * @param String $form_name
+   * @return TRUE if successful, FALSE otherwise
+   */
+  public function addForm($form_name) {
+    $result = $this->contentModel->addForm($form_name);
+    return $result && $this->contentModel->saveToFedora();
+  }
+
+  /**
+   *
+   * @param String $type
+   * @param Array $element_properties
+   * @param String $form_name
+   * @param Array $path
+   * @return TRUE if successful, FALSE otherwise.
+   */
+  public function addFormElement($type, $element_properties, $form_name, $path) {
+    $definition = $this->getElementDefinition($type, $element_properties);
+    $form_element = $this->findFormElementFromPath($form_name, $path);
+    $result = $this->contentModel->addElementToForm($definition, $form_element);
+    return $result && $this->contentModel->saveToFedora();
+  }
+
+  /**
+   *
+   * @param String $form_name
+   * @param Array $path
+   * @return TRUE if successful FALSE otherwise.
+   */
+  public function removeFormElement($form_name, $path) {
+    $form_element = $this->findFormElementFromPath($form_name, $path);
+    $result = $this->contentModel->removeElementFromForm($form_element);
+    return $result && $this->contentModel->saveToFedora();
+    return TRUE;
+  }
+
+  /**
+   *
+   * @param <type> $type
+   * @param <type> $element_properties
+   * @param <type> $form_name
+   * @param <type> $path 
+   */
+  public function editFormElement($type, $element_properties, $form_name, $path) {
+    $definition = $this->getElementDefinition($type, $element_properties);
+    $form_element = $this->findFormElementFromPath($form_name, $path);
+    $result = $this->contentModel->editFormElement($definition, $form_element);
+    return $result && $this->contentModel->saveToFedora();
+  }
+
+  /**
+   *
+   * @param String $form_name
+   * @param String $path
+   * @param Boolean $edit
+   * @return Array
+   */
+  public function getFormElementForm($form_name, $path, $edit) {
+    $form = array(
+      'form' => array(
+        '#type' => 'fieldset',
+        '#title' => '',
+        '#tree' => TRUE,
+        'type' => array(
+          '#type' => 'select',
+          '#title' => t('Choose element type'),
+          '#tree' => TRUE,
+          '#options' => array(
+            'fieldset' => 'fieldset',
+            'tabpanel' => 'tabpanel',
+            'textfield' => 'textfield',
+            'textarea' => 'textarea',
+            'list' => 'list',
+            'checkbox' => 'checkbox',
+          ),
+          '#ahah' => array(
+            'path' => 'admin/content/modeller/ajax/element/properties',
+            'event' => 'change',
+            'wrapper' => AHAH_WRAPPER,
+            'method' => 'replace',
+            'effect' => 'fade',
+          ),
+        ),
+        'element_properties' => array(),
+        'submit_parameters' => array(
+          '#type' => 'hidden',
+          '#value' => $params,
+        ),
+        'model_pid' => array(
+          '#type' => 'hidden',
+          '#value' => $this->contentModel->pid,
+        ),
+        'name' => array(
+          '#type' => 'hidden',
+          '#value' => $form_name,
+        ),
+        'path' => array(
+          '#type' => 'hidden',
+          '#value' => $path,
+        ),
+        'submit' => array(
+          '#type' => 'submit',
+          '#value' => t('Save'),
+        ),
+        'cancel' => array(
+          '#type' => 'button',
+          '#value' => t('Cancel'),
+          '#id' => 'cancel',
+        )
+      )
+    );
+    if ($edit) {
+      $form_element = $this->findFormElementFromPath($form_name, $path);
+      $type = $form_element->tagName;
+      $form['form']['type']['#default_value'] = $type;
+      $form['form']['element_properties'] = $this->getElementPropertiesForm($type, $form_element);
+    }
+    else {
+      $types = array_keys($form['form']['type']['#options']);
+      $form['form']['element_properties'] = $this->getElementPropertiesForm($types[0]);
+    }
+    return $form;
+  }
+
+  /**
+   *
+   * @param <type> $element_type
+   * @return <type> 
+   */
+  function getElementPropertiesForm($element_type, $form_element = NULL) {
+    $form = $this->_getElementPropertiesForm($form_element);
+    $func = 'get' . ucwords($element_type) . 'ElementProperties';
+    if (method_exists($this, $func)) {
+      $form = array_merge($form, call_user_func(array($this, $func), $form_element));
+    }
+    return array(
+      '#type' => 'markup',
+      '#prefix' => '<div id="' . AHAH_WRAPPER . '">',
+      '#suffix' => '</div>',
+      $form
+    );
+  }
+
+  /**
+   *
+   * @param <type> $form_element
+   * @param <type> $tag_name
+   *
+   * @return
+   */
+  private function getElementValue($tag_name, $form_element = NULL) {
+    if ($form_element) {
+      $result = $form_element->getElementsByTagName($tag_name);
+      if ($result && $result->length == 1) {
+        return $result->item(0)->textContent;
+      }
+    }
+    return NULL;
+  }
+
+  /**
+   *
+   * @return <type> 
+   */
+  public function _getElementPropertiesForm($form_element) {
+    return array(
+      '#tree' => TRUE,
+      'title' => array(
+        '#type' => 'textfield',
+        '#title' => t('title'),
+        '#size' => 30,
+        '#required' => TRUE,
+        '#description' => t('The title of the form element.'),
+        '#default_value' => $this->getElementValue('title', $form_element),
+      ),
+      'description' => array(
+        '#type' => 'textarea',
+        '#title' => t('Description'),
+        '#rows' => 1,
+        '#cols' => 1,
+        '#description' => t('The description of the form element.'),
+        '#default_value' => $this->getElementValue('description', $form_element),
+      ),
+      'xpath' => array(
+        '#type' => 'textfield',
+        '#title' => t('XPath'),
+        '#size' => 100,
+        '#description' => t('The xpath of the form element.'),
+        '#default_value' => $this->getElementValue('xpath', $form_element),
+      ),
+      'xpath_full' => array(
+        '#type' => 'checkbox',
+        '#title' => t('XPath Full?'),
+        '#description' => t('Is the xpath complete? Or is it build with the help of a parent element?'),
+        '#default_value' => $this->getElementValue('xpath_full', $form_element),
+      ),
+      'required' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Required?'),
+        '#description' => t('Is this form element required?'),
+        '#default_value' => $this->getElementValue('required', $form_element),
+      )
+    );
+  }
+
+  /**
+   *
+   * @param Array $form
+   * @return Array
+   */
+  function getTextfieldElementProperties($form_element) {
+    return array(
+      'default_value' => array(
+        '#type' => 'textfield',
+        '#title' => t('Default Value'),
+        '#size' => 100,
+        '#description' => t('Specify the default value for this textfield.'),
+        '#default_value' => $this->getElementValue('default_value', $form_element),
+      )
+    );
+  }
+
+  /**
+   *
+   * @return Array
+   */
+  function getFieldsetElementProperties($form_element) {
+    return array(
+      'content' => array(
+        '#type' => 'hidden',
+        '#default_value' => NULL,
+      )
+    );
+  }
+
+  /**
+   *
+   * @return Array
+   */
+  function getTabpanelElementProperties($form_element) {
+    return array(
+      'content' => array(
+        '#type' => 'hidden',
+        '#default_value' => NULL,
+      )
+    );
+  }
+
+}
+
+/**
+ * Below are hook/helper functions for the various forms that are related to the FormTree.
+ * 
+ */
+function icm_process_params($params) {
+  list($model_pid, $form_name) = $params;
+  $path = implode(' ', array_splice($params, 2));
+  return array($model_pid, $form_name, $path);
+}
+
+/**
+ *
+ * @param Array $params
+ */
+function icm_remove_form($params) {
+  list($model_pid, $form_name) = $params;
+  $form_tree = FormTree::createFromPID($model_pid);
+  if ($form_tree->removeForm($form_name)) {
+    echo 'success:' . t('Removed form <b>%name</b> from model <b>%model_pid</b>.', array('%name' => $form_name, '%model_pid' => $model_pid));
+  }
+  else {
+    echo t('Error: Unable to remove form <b>%name</b> from model <b>%model_pid</b>.', array('%name' => $name, '%model_pid' => $model_pid));
+  }
+  exit();
+}
+
+/**
+ *
+ * @param Array $params
+ */
+function icm_remove_form_element($params) {
+  list($model_pid, $form_name, $path) = icm_process_params($params);
+  $form_tree = FormTree::createFromPID($model_pid);
+  if ($form_tree->removeFormElement($form_name, $path)) {
+    echo 'success:' . t('Removed form element from model <b>%model_pid</b>.', array('%name' => $form_name, '%model_pid' => $model_pid));
+  }
+  else {
+    echo t('Error: Unable to remove form element from model <b>%model_pid</b>.', array('%name' => $form_name, '%model_pid' => $model_pid));
+  }
+  exit();
+}
+
+/**
+ *
+ * @param Array $form_state
+ * @param Array $params
+ * @return Array
+ */
+function icm_add_form($form, $params) {
+  list($model_pid) = icm_process_params($params);
+  $form['form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add a form to <b>%model_pid</b>', array('%model_pid' => $model_pid)),
+    '#tree' => TRUE,
+    'name' => array(
+      '#type' => 'textfield',
+      '#title' => t('Name'),
+      '#size' => 30,
+      '#required' => TRUE,
+      '#description' => t('The name of the form.'),
+      '#element_validate' => array('FormTree::validateFormName'),
+    ),
+    'model_pid' => array(
+      '#type' => 'hidden',
+      '#value' => $model_pid
+    ),
+    'submit' => array(
+      '#type' => 'submit',
+      '#value' => t('Save')
+    ),
+    'cancel' => array(
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#id' => 'cancel'
+    )
+  );
+  return $form;
+}
+
+/**
+ *
+ * @param Array $form
+ * @param Array $form_state
+ */
+function icm_add_form_submit($form, &$form_state) {
+  if (form_get_errors() !== NULL)
+    return;
+  $model_pid = trim($form_state['values']['form']['model_pid']);
+  $form_name = $form_state['values']['form']['name'];
+  $form_tree = FormTree::createFromPID($model_pid);
+  if ($form_tree->addForm($form_name)) {
+    echo 'success:' . t('Added form <b>%name</b> to model <b>%model_pid</b>.', array('%name' => $form_name, '%model_pid' => $model_pid));
+    exit();
+  }
+  else {
+    form_set_error('form][name', t('Error: Unable to add form <b>%name</b> to model <b>%model_pid</b>.', array('%name' => $form_name, '%model_pid' => $model_pid)));
+  }
+}
+
+/**
+ *
+ * @param Array $form_state
+ * @param Array $params
+ * @return Array
+ */
+function icm_edit_form($form, $params) {
+  list($model_pid, $form_name) = icm_process_params($params);
+  $form['form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Edit form <b>%name</b> from model <b>$model_pid</b>', array('%name' => $form_name, '%model_pid' => $model_pid)),
+    '#tree' => TRUE,
+    'name' => array(
+      '#type' => 'textfield',
+      '#title' => t('Name'),
+      '#size' => 30,
+      '#required' => TRUE,
+      '#description' => t('The new name of the form.'),
+      '#element_validate' => array('FormTree::validateFormName'),
+      '#default_value' => $form_name,
+    ),
+    'old_name' => array(
+      '#type' => 'hidden',
+      '#value' => $form_name,
+    ),
+    'model_pid' => array(
+      '#type' => 'hidden',
+      '#value' => $model_pid,
+    ),
+    'submit' => array(
+      '#type' => 'submit',
+      '#value' => t('Save'),
+    ),
+    'cancel' => array(
+      '#type' => 'button',
+      '#value' => t('Cancel'),
+      '#id' => 'cancel',
+    ),
+  );
+  return $form;
+}
+
+/**
+ *
+ * @param Array $form
+ * @param Array $form_state
+ */
+function icm_edit_form_submit($form, &$form_state) {
+  if (form_get_errors() !== NULL)
+    return;
+  $model_pid = trim($form_state['values']['form']['model_pid']);
+  $content_model = ContentModel::loadFromModel($model_pid);
+  $old_name = $form_state['values']['form']['old_name'];
+  $form_name = $form_state['values']['form']['name'];
+  if ($content_model) {
+    if ($content_model->editForm($old_name, $form_name) && $content_model->saveToFedora()) {
+      echo 'success:' . t('Edited form <b>%old_name</b> from model <b>%model_pid</b>.', array('%old_name' => $old_name, '%model_pid' => $model_pid));
+      exit();
+    }
+  }
+  form_set_error('form][name', t('Error: Unable to edit form <b>%old_name</b> from model <b>%model_pid</b>.', array('%old_name' => $old_name, '%model_pid' => $model_pid)));
+}
+
+/**
+ *
+ * @param Array $form
+ * @param Array $params
+ * @return Array
+ */
+function icm_add_form_element($form, $params) {
+  list($model_pid, $form_name, $path) = icm_process_params($params);
+  $form_tree = FormTree::createFromPID($model_pid);
+  $form = array_merge($form, $form_tree->getFormElementForm($form_name, $path, FALSE));
+  $form['#title'] = t('Add element to form <b>%name</b>', array('%name' => $form_name));
+  return $form;
+}
+
+/**
+ *
+ * @param Array $form
+ * @param Array $form_state
+ */
+function icm_add_form_element_submit($form, &$form_state) {
+  if (form_get_errors() !== NULL)
+    return;
+  $model_pid = trim($form_state['values']['form']['model_pid']);
+  $form_name = trim($form_state['values']['form']['name']);
+  $type = trim($form_state['values']['form']['type']);
+  $path = trim($form_state['values']['form']['path']);
+  $form_tree = FormTree::createFromPID($model_pid);
+  $element_properties = $form_state['values']['form']['element_properties'][0];
+  if ($form_tree->addFormElement($type, $element_properties, $form_name, $path)) {
+    echo 'success:' . t('Added a <b>%type_name</b> to <b>%form_name</b>.', array('%type_name' => $element_type, '%form_name' => $form_name));
+    exit();
+  }
+  else {
+    echo t('Error: Unable to add a <b>%type_name</b> to <b>%form_name</b>.', array('%type_name' => $element_type, '%form_name' => $form_name));
+    exit();
+  }
+}
+
+/**
+ *
+ * @param <type> $form
+ * @param <type> $params
+ * @return <type> 
+ */
+function icm_edit_form_element($form, $params) {
+  list($model_pid, $form_name, $path) = icm_process_params($params);
+  $form_tree = FormTree::createFromPID($model_pid);
+  $form = array_merge($form, $form_tree->getFormElementForm($form_name, $path, TRUE));
+  $form['#title'] = t('Edit Form Element');
+  return $form;
+}
+
+/**
+ *
+ * @param <type> $form
+ * @param <type> $form_state 
+ */
+function icm_edit_form_element_submit($form, &$form_state) {
+  if (form_get_errors() !== NULL)
+    return;
+  $model_pid = trim($form_state['values']['form']['model_pid']);
+  $form_name = trim($form_state['values']['form']['name']);
+  $type = trim($form_state['values']['form']['type']);
+  $path = trim($form_state['values']['form']['path']);
+  $form_tree = FormTree::createFromPID($model_pid);
+  $element_properties = $form_state['values']['form']['element_properties'][0];
+  if ($form_tree->editFormElement($type, $element_properties, $form_name, $path)) {
+    echo 'success:' . t('Added a <b>%type_name</b> to <b>%form_name</b>.', array('%type_name' => $element_type, '%form_name' => $form_name));
+    exit();
+  }
+  else {
+    echo t('Error: Unable to add a <b>%type_name</b> to <b>%form_name</b>.', array('%type_name' => $element_type, '%form_name' => $form_name));
+    exit();
+  }
+}
+
+/**
+ * Menu callback used by ahah, to populate.
+ */
+function icm_ajax_element_properties() {
+  if (!isset($_POST['form_build_id']))
+    return;
+  $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => $_POST);
+  $form_build_id = $_POST['form_build_id'];
+  if (!$form = form_get_cache($form_build_id, $form_state))
+    exit();
+  $form_tree = FormTree::createFromPID($form_state['post']['form']['model_pid']);
+  $form['form']['element_properties'] = $form_tree->getElementPropertiesForm($form_state['post']['form']['type']);
+  $form_id = $form['#parameters'][0];
+  $form['#post'] = $_POST;
+  $form['#programmed'] = FALSE;
+  form_set_cache($form_build_id, $form, $form_state);
+  $form = form_builder($form_id, $form, $form_state);
+  unset($form['form']['element_properties']['#prefix'], $form['form']['element_properties']['#suffix']); // Prevent dbl wrapping.
+  drupal_json(array(
+    'status' => TRUE,
+    'data' => theme('status_messages') . drupal_render($form['form']['element_properties']),
+  ));
 }

@@ -130,7 +130,9 @@ function ife_fieldset_process($element, $edit, &$form_state) {
 //-------------------------------------------------------------------------------
 function ife_fieldset_children_has_value($element) {
   $ret = false;
-  if ((isset($element['#default_value']) && !is_array($element['#default_value']) && trim($element['#default_value']) != '') || (isset($element['#value']) && trim($element['#value']) != '')) {
+  $has_default_value = (isset($element['#default_value']) && !is_array($element['#default_value']) && trim($element['#default_value']) != '');
+  $has_value = (isset($element['#value']) && !is_array($element['#value']) && trim($element['#value']) != '');
+  if ($has_default_value || $has_value) {
     $ret = true;
   }
   else {

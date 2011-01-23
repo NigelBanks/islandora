@@ -1365,20 +1365,74 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
-   * Appends a element to the named form.
    *
-   * @param Array $element_definition
-   *   A drupal style form definition, without the hashs.
-   * @param String $form_name
-   *   The name of the form element to modify.
-   * @return Boolean
-   *   TRUE if successful False otherwise.
+   * @param DOMElement $element
+   *
+   * @return DOMElement
+   *
    */
-  public function addElementToForm($element_definition, $form_name, $parameters) {
-    $form = $this->getFormElement($form_name);
-
-
+  private function getContentElement($element) {
+    $result = $element->getElementsByTagName('content');
+    if ($result && $result->length) {
+      return $result->item(0);
+    }
     return FALSE;
+  }
+
+  /**
+   *
+   * @param <type> $element_definition
+   * @param <type> $element 
+   */
+  private function addFormControlsToElement($element_definition, $element) {
+    unset($element_definition['type']);
+    foreach ($element_definition as $key => $value) {
+      $form_control = $this->xml->createElement($key);
+      $element->appendChild($form_control);
+      if (isset($value) && $value != '') {
+        $text_node = $this->xml->createTextNode($value);
+        $form_control->appendChild($text_node);
+      }
+    }
+  }
+
+  /**
+   *
+   * @param <type> $element_definition
+   * @param <type> $parent_element
+   * @return <type> 
+   */
+  public function addElementToForm($element_definition, $parent_element) {
+    $element = $this->xml->createElement($element_definition['type']);
+    $this->addFormControlsToElement($element_definition, $element);
+    $parent_element->appendChild($element);
+    return TRUE;
+  }
+
+  /**
+   *
+   * @param <type> $element_definition
+   * @param <type> $parent_element
+   */
+  public function editFormElement($element_definition, $edit_element) {
+    $new_element = $this->xml->createElement($element_definition['type']);
+    $this->addFormControlsToElement($element_definition, $new_element);
+    $edit_element->parentNode->insertBefore($new_element, $edit_element->nextSibling);
+    $edit_element->parentNode->removeChild($edit_element);
+    return TRUE;
+  }
+
+  /**
+   *
+   * @param DOMElement $form_element
+   *
+   * @return Boolean
+   *   TRUE if successful, FALSE otherwise.
+   *
+   */
+  public function removeElementFromForm($form_element) {
+    $form_element->parentNode->removeChild($form_element);
+    return TRUE;
   }
 
   /**
