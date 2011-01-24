@@ -302,7 +302,7 @@ class FormTree {
    */
   public function removeForm($form_name) {
     $result = $this->contentModel->removeForm($form_name);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -313,7 +313,7 @@ class FormTree {
    */
   public function addForm($form_name) {
     $result = $this->contentModel->addForm($form_name);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -328,7 +328,7 @@ class FormTree {
     $definition = $this->getElementDefinition($type, $element_properties);
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->addElementToForm($definition, $form_element);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -340,7 +340,7 @@ class FormTree {
   public function removeFormElement($form_name, $path) {
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->removeElementFromForm($form_element);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -354,7 +354,7 @@ class FormTree {
     $definition = $this->getElementDefinition($type, $element_properties);
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->editFormElement($definition, $form_element);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -365,7 +365,7 @@ class FormTree {
   public function incFormElement($form_name, $path) {
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->incFormElement($form_element);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -376,7 +376,7 @@ class FormTree {
   public function decFormElement($form_name, $path) {
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->decFormElement($form_element);
-    //return $result && $this->contentModel->saveToFedora();
+    return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -584,9 +584,12 @@ class FormTree {
  * 
  */
 function icm_process_params($params) {
-  list($model_pid, $form_name) = $params;
-  $path = implode(' ', array_splice($params, 2));
-  return array($model_pid, $form_name, $path);
+  if(is_array($params)) {
+    list($model_pid, $form_name) = $params;
+    $path = implode(' ', array_splice($params, 2));
+    return array($model_pid, $form_name, $path);
+  }
+  return array();
 }
 
 /**
@@ -686,7 +689,12 @@ function icm_remove_form_element($params) {
  * @return Array
  */
 function icm_add_form(&$form_state, $params) {
-  list($model_pid) = icm_process_params($params);
+  if (is_array($params)) {
+    list($model_pid) = icm_process_params($params);
+  }
+  else {
+    $model_pid = $form_state['post']['form']['model_pid'];
+  }
   $form['form'] = array(
     '#type' => 'fieldset',
     '#title' => t('Add a form to <b>%model_pid</b>', array('%model_pid' => $model_pid)),
@@ -743,6 +751,13 @@ function icm_add_form_submit($form, &$form_state) {
  * @return Array
  */
 function icm_edit_form(&$form_state, $params) {
+  if (is_array($params)) {
+    list($model_pid, $form_name) = icm_process_params($params);
+  }
+  else {
+    $model_pid = $form_state['post']['form']['model_pid'];
+    $form_name = $form_state['post']['form']['name'];
+  }
   list($model_pid, $form_name) = icm_process_params($params);
   $form['form'] = array(
     '#type' => 'fieldset',
@@ -806,7 +821,14 @@ function icm_edit_form_submit($form, &$form_state) {
  * @return Array
  */
 function icm_add_form_element(&$form_state, $params) {
-  list($model_pid, $form_name, $path) = icm_process_params($params);
+  if (is_array($params)) {
+    list($model_pid, $form_name, $path) = icm_process_params($params);
+  }
+  else {
+    $model_pid = $form_state['post']['form']['model_pid'];
+    $form_name = $form_state['post']['form']['name'];
+    $path = $form_state['post']['form']['path'];
+  }
   $form_tree = FormTree::createFromPID($model_pid);
   $form = $form_tree->getFormElementForm($form_name, $path, FALSE);
   $form['#title'] = t('Add element to form <b>%name</b>', array('%name' => $form_name));
@@ -844,7 +866,14 @@ function icm_add_form_element_submit($form, &$form_state) {
  * @return <type> 
  */
 function icm_edit_form_element(&$form_state, $params) {
-  list($model_pid, $form_name, $path) = icm_process_params($params);
+  if (is_array($params)) {
+    list($model_pid, $form_name, $path) = icm_process_params($params);
+  }
+  else {
+    $model_pid = $form_state['post']['form']['model_pid'];
+    $form_name = $form_state['post']['form']['name'];
+    $path = $form_state['post']['form']['path'];
+  }
   $form_tree = FormTree::createFromPID($model_pid);
   $form = $form_tree->getFormElementForm($form_name, $path, TRUE);
   $form['#title'] = t('Edit Form Element');
