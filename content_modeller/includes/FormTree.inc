@@ -37,31 +37,6 @@ class FormTree {
 
   /**
    *
-   * @param <type> $element
-   * @param <type> $form_state
-   */
-  public static function validateFormName($element, &$form_state) {
-    if (form_get_errors() !== NULL)
-      return;
-    module_load_include('inc', 'fedora_repository', 'ContentModel');
-    $model_pid = trim($form_state['values']['form']['model_pid']);
-    $content_model = ContentModel::loadFromModel($model_pid);
-    $form_names = $content_model->getFormNames();
-    $name = trim($element['#value']);
-    foreach ($form_names as $value) {
-      if ($name == $value) {
-        form_error($element, t('Error: The specified name <b>%name</b> is already in use.', array('%name' => $name)));
-        return;
-      }
-    }
-    if (stripos($name, ' ') !== FALSE) {
-      form_error($element, t('Error: The specified name <b>%name</b> is not valid.', array('%name' => $name)));
-      return;
-    }
-  }
-
-  /**
-   *
    * @param String $icon
    * @param Boolean $is_form
    * @param String $function
@@ -327,7 +302,7 @@ class FormTree {
    */
   public function removeForm($form_name) {
     $result = $this->contentModel->removeForm($form_name);
-    return $result && $this->contentModel->saveToFedora();
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -338,7 +313,7 @@ class FormTree {
    */
   public function addForm($form_name) {
     $result = $this->contentModel->addForm($form_name);
-    return $result && $this->contentModel->saveToFedora();
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -353,7 +328,7 @@ class FormTree {
     $definition = $this->getElementDefinition($type, $element_properties);
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->addElementToForm($definition, $form_element);
-    return $result && $this->contentModel->saveToFedora();
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -365,8 +340,7 @@ class FormTree {
   public function removeFormElement($form_name, $path) {
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->removeElementFromForm($form_element);
-    return $result && $this->contentModel->saveToFedora();
-    return TRUE;
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -380,7 +354,7 @@ class FormTree {
     $definition = $this->getElementDefinition($type, $element_properties);
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->editFormElement($definition, $form_element);
-    return $result && $this->contentModel->saveToFedora();
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -391,7 +365,7 @@ class FormTree {
   public function incFormElement($form_name, $path) {
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->incFormElement($form_element);
-    return $result && $this->contentModel->saveToFedora();
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -402,7 +376,7 @@ class FormTree {
   public function decFormElement($form_name, $path) {
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->decFormElement($form_element);
-    return $result && $this->contentModel->saveToFedora();
+    //return $result && $this->contentModel->saveToFedora();
   }
 
   /**
@@ -617,6 +591,32 @@ function icm_process_params($params) {
 
 /**
  *
+ * @param <type> $element
+ * @param <type> $form_state
+ */
+function icm_validate_form_name($element, &$form_state) {
+  if (form_get_errors() !== NULL)
+    return;
+  module_load_include('inc', 'fedora_repository', 'ContentModel');
+  $model_pid = trim($form_state['values']['form']['model_pid']);
+  $content_model = ContentModel::loadFromModel($model_pid);
+  $form_names = $content_model->getFormNames();
+  $name = trim($element['#value']);
+  foreach ($form_names as $value) {
+    if ($name == $value) {
+      form_error($element, t('Error: The specified name <b>%name</b> is already in use.', array('%name' => $name)));
+      return;
+    }
+  }
+  $result = stripos($name, ' ');
+  if ($result !== FALSE) {
+    form_error($element, t('Error: The specified name <b>%name</b> is not valid.', array('%name' => $name)));
+    return;
+  }
+}
+
+/**
+ *
  * @param Array $params
  */
 function icm_remove_form($params) {
@@ -697,7 +697,7 @@ function icm_add_form(&$form_state, $params) {
       '#size' => 30,
       '#required' => TRUE,
       '#description' => t('The name of the form.'),
-      '#element_validate' => array('FormTree::validateFormName'),
+      '#element_validate' => array('icm_validate_form_name'),
     ),
     'model_pid' => array(
       '#type' => 'hidden',
@@ -754,7 +754,7 @@ function icm_edit_form(&$form_state, $params) {
       '#size' => 30,
       '#required' => TRUE,
       '#description' => t('The new name of the form.'),
-      '#element_validate' => array('FormTree::validateFormName'),
+      '#element_validate' => array('icm_validate_form_name'),
       '#default_value' => $form_name,
     ),
     'old_name' => array(
@@ -808,7 +808,7 @@ function icm_edit_form_submit($form, &$form_state) {
 function icm_add_form_element(&$form_state, $params) {
   list($model_pid, $form_name, $path) = icm_process_params($params);
   $form_tree = FormTree::createFromPID($model_pid);
-  $form = array_merge($form, $form_tree->getFormElementForm($form_name, $path, FALSE));
+  $form = $form_tree->getFormElementForm($form_name, $path, FALSE);
   $form['#title'] = t('Add element to form <b>%name</b>', array('%name' => $form_name));
   return $form;
 }
@@ -846,7 +846,7 @@ function icm_add_form_element_submit($form, &$form_state) {
 function icm_edit_form_element(&$form_state, $params) {
   list($model_pid, $form_name, $path) = icm_process_params($params);
   $form_tree = FormTree::createFromPID($model_pid);
-  $form = array_merge($form, $form_tree->getFormElementForm($form_name, $path, TRUE));
+  $form = $form_tree->getFormElementForm($form_name, $path, TRUE);
   $form['#title'] = t('Edit Form Element');
   return $form;
 }
