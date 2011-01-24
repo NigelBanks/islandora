@@ -54,6 +54,10 @@ class FormTree {
         return;
       }
     }
+    if (stripos($name, ' ') !== FALSE) {
+      form_error($element, t('Error: The specified name <b>%name</b> is not valid.', array('%name' => $name)));
+      return;
+    }
   }
 
   /**
@@ -79,8 +83,13 @@ class FormTree {
     $params = array($this->contentModel->pid, $form_name);
     $icons = icon('remove.png', FALSE, 'icm_remove_form', $params);
     $icons .= icon('add.png', TRUE, 'icm_add_form_element', $params);
-    $icons .= icon('blue_up.png', FALSE, 'icm_inc_form', $params);
-    $icons .= icon('blue_down.png', FALSE, 'icm_dec_form', $params);
+    $form = $this->contentModel->getFormElement($form_name);
+    if (!$this->isFirstChildElement($form)) {
+      $icons .= icon('blue_up.png', FALSE, 'icm_inc_form_element', $params);
+    }
+    if (!$this->isLastChildElement($form)) {
+      $icons .= icon('blue_down.png', FALSE, 'icm_dec_form_element', $params);
+    }
     $icons .= icon('edit.gif', TRUE, 'icm_edit_form', $params);
     return $icons;
   }
@@ -102,8 +111,12 @@ class FormTree {
       $add_params = array($this->contentModel->pid, $form_name, implode(' ', $path_to_content));
       $icons .= icon('add.png', TRUE, 'icm_add_form_element', $add_params);
     }
-    $icons .= icon('blue_up.png', FALSE, 'icm_inc_form_element', $params);
-    $icons .= icon('blue_down.png', FALSE, 'icm_dec_form_element', $params);
+    if (!$this->isFirstChildElement($form_element)) {
+      $icons .= icon('blue_up.png', FALSE, 'icm_inc_form_element', $params);
+    }
+    if (!$this->isLastChildElement($form_element)) {
+      $icons .= icon('blue_down.png', FALSE, 'icm_dec_form_element', $params);
+    }
     $icons .= icon('edit.gif', TRUE, 'icm_edit_form_element', $params);
     return $icons;
   }
@@ -264,6 +277,36 @@ class FormTree {
 
   /**
    *
+   * @param DOMElement $form_element
+   * @return Boolean
+   */
+  private function isFirstChildElement($form_element) {
+    $prev = $form_element;
+    while ($prev = $prev->previousSibling) {
+      if (get_class($prev) == 'DOMElement') {
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   *
+   * @param DOMElement $form_element
+   * @return Boolean
+   */
+  private function isLastChildElement($form_element) {
+    $next = $form_element;
+    while ($next = $next->nextSibling) {
+      if (get_class($next) == 'DOMElement') {
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   *
    * @param String $type
    * @param Array $element_properties
    * @return Array
@@ -337,6 +380,28 @@ class FormTree {
     $definition = $this->getElementDefinition($type, $element_properties);
     $form_element = $this->findFormElementFromPath($form_name, $path);
     $result = $this->contentModel->editFormElement($definition, $form_element);
+    return $result && $this->contentModel->saveToFedora();
+  }
+
+  /**
+   *
+   * @param String $form_name
+   * @param String $path
+   */
+  public function incFormElement($form_name, $path) {
+    $form_element = $this->findFormElementFromPath($form_name, $path);
+    $result = $this->contentModel->incFormElement($form_element);
+    return $result && $this->contentModel->saveToFedora();
+  }
+
+  /**
+   *
+   * @param String $form_name
+   * @param String $path
+   */
+  public function decFormElement($form_name, $path) {
+    $form_element = $this->findFormElementFromPath($form_name, $path);
+    $result = $this->contentModel->decFormElement($form_element);
     return $result && $this->contentModel->saveToFedora();
   }
 
@@ -570,6 +635,38 @@ function icm_remove_form($params) {
  *
  * @param Array $params
  */
+function icm_inc_form_element($params) {
+  list($model_pid, $form_name, $path) = icm_process_params($params);
+  $form_tree = FormTree::createFromPID($model_pid);
+  if ($form_tree->incFormElement($form_name, $path)) {
+    echo 'success:' . t('Successful.');
+  }
+  else {
+    echo t('Error:');
+  }
+  exit();
+}
+
+/**
+ *
+ * @param Array $params
+ */
+function icm_dec_form_element($params) {
+  list($model_pid, $form_name, $path) = icm_process_params($params);
+  $form_tree = FormTree::createFromPID($model_pid);
+  if ($form_tree->decFormElement($form_name, $path)) {
+    echo 'success:' . t('Successful');
+  }
+  else {
+    echo t('Error:');
+  }
+  exit();
+}
+
+/**
+ *
+ * @param Array $params
+ */
 function icm_remove_form_element($params) {
   list($model_pid, $form_name, $path) = icm_process_params($params);
   $form_tree = FormTree::createFromPID($model_pid);
@@ -588,7 +685,7 @@ function icm_remove_form_element($params) {
  * @param Array $params
  * @return Array
  */
-function icm_add_form($form, $params) {
+function icm_add_form(&$form_state, $params) {
   list($model_pid) = icm_process_params($params);
   $form['form'] = array(
     '#type' => 'fieldset',
@@ -645,7 +742,7 @@ function icm_add_form_submit($form, &$form_state) {
  * @param Array $params
  * @return Array
  */
-function icm_edit_form($form, $params) {
+function icm_edit_form(&$form_state, $params) {
   list($model_pid, $form_name) = icm_process_params($params);
   $form['form'] = array(
     '#type' => 'fieldset',
@@ -704,11 +801,11 @@ function icm_edit_form_submit($form, &$form_state) {
 
 /**
  *
- * @param Array $form
+ * @param Array $form_state
  * @param Array $params
  * @return Array
  */
-function icm_add_form_element($form, $params) {
+function icm_add_form_element(&$form_state, $params) {
   list($model_pid, $form_name, $path) = icm_process_params($params);
   $form_tree = FormTree::createFromPID($model_pid);
   $form = array_merge($form, $form_tree->getFormElementForm($form_name, $path, FALSE));
@@ -742,11 +839,11 @@ function icm_add_form_element_submit($form, &$form_state) {
 
 /**
  *
- * @param <type> $form
+ * @param <type> $form_state
  * @param <type> $params
  * @return <type> 
  */
-function icm_edit_form_element($form, $params) {
+function icm_edit_form_element(&$form_state, $params) {
   list($model_pid, $form_name, $path) = icm_process_params($params);
   $form_tree = FormTree::createFromPID($model_pid);
   $form = array_merge($form, $form_tree->getFormElementForm($form_name, $path, TRUE));

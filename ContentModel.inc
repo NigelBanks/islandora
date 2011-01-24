@@ -46,7 +46,7 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
-   * Ingests a Content Model from a file to the specified pid/dsid . 
+   * Ingests a Content Model from a file to the specified pid/dsid .
    * Returns false on failure.
    *
    * @param string $pid
@@ -344,8 +344,8 @@ class ContentModel extends XMLDatastream {
     $form_elementsEl = $newDom->createElement('form_elements');
     foreach ($sXml->ingest_form->form_elements->element as $element) {
 
-      //I found an XML where the label was HTML..  this code will attempt to
-      //walk the object setting the label to be the first string it finds.
+//I found an XML where the label was HTML..  this code will attempt to
+//walk the object setting the label to be the first string it finds.
       if (count(get_object_vars($element->label)) > 0) {
         $obj = $element->label;
         while ($obj != NULL && !is_string($obj)) {
@@ -586,14 +586,14 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
-   * Decrements an ingest form element in the list of elements.  
+   * Decrements an ingest form element in the list of elements.
    * Updates the "order".  This method is simply an overload to the incIngestFormElement
    * which has a direction parameter.
    *
-   * TODO: Might be useful to move multiple places at once, or define 
-   * a method to move to an absolute position.  
+   * TODO: Might be useful to move multiple places at once, or define
+   * a method to move to an absolute position.
    *
-   * @param String $name 
+   * @param String $name
    * @return boolean $success
    */
   public function decIngestFormElement($name) {
@@ -865,12 +865,12 @@ class ContentModel extends XMLDatastream {
   }
 
   /**
-   * Decrements an authority list item from a form element in the list of elements.  
+   * Decrements an authority list item from a form element in the list of elements.
    * Updates the "order".  This method is simply an overload to the incAuthListItem
    * which has a direction parameter.
 
    *
-   * @param String $elementName 
+   * @param String $elementName
    * @param String $value
    * @return boolean $success
    */
@@ -1196,7 +1196,7 @@ class ContentModel extends XMLDatastream {
         }
       }
       else {
-        // Assume DC form if none is specified.
+// Assume DC form if none is specified.
         module_load_include('inc', 'fedora_repository', 'formClass');
         $metaDataForm = new formClass();
         $ret = $metaDataForm->updateMetaData($form_state['values']['form_id'], $form_state['values'], $soap_client);
@@ -1244,7 +1244,7 @@ class ContentModel extends XMLDatastream {
    *
    * @param String $name
    *   The name of the form to get.
-   * 
+   *
    * @return DOMElement
    *   Returns the named DOMElement 'form' if it exists, otherwise it returns
    *   FALSE.
@@ -1382,7 +1382,7 @@ class ContentModel extends XMLDatastream {
   /**
    *
    * @param <type> $element_definition
-   * @param <type> $element 
+   * @param <type> $element
    */
   private function addFormControlsToElement($element_definition, $element) {
     unset($element_definition['type']);
@@ -1417,8 +1417,62 @@ class ContentModel extends XMLDatastream {
   public function editFormElement($element_definition, $edit_element) {
     $new_element = $this->xml->createElement($element_definition['type']);
     $this->addFormControlsToElement($element_definition, $new_element);
-    $edit_element->parentNode->insertBefore($new_element, $edit_element->nextSibling);
+    $this->insertElementInPlace($new_element, $edit_element);
     $edit_element->parentNode->removeChild($edit_element);
+    return TRUE;
+  }
+
+  /**
+   *
+   * @param <type> $new_element
+   * @param <type> $element
+   */
+  private function insertElementInPlace($new_element, $element) {
+    $next = $element->nextSibling;
+    if ($next) {
+      $element->parentNode->insertBefore($new_element, $next);
+    }
+    else {
+      $element->parentNode->appendChild($new_element);
+    }
+  }
+
+  /**
+   *
+   * @param <type> $form_element
+   * @return <type> 
+   */
+  public function incFormElement($form_element) {
+    $prev = $form_element;
+    $tag_name = $prev->tagName;
+    $name = $prev->getAttribute('name');
+    while ($prev = $prev->previousSibling) {
+      $tag_name = $prev->tagName;
+      if (get_class($prev) == 'DOMElement') {
+        $name = $prev->getAttribute('name');
+        $form_element->parentNode->insertBefore($form_element, $prev);
+        break;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   *
+   * @param <type> $form_element
+   * @return <type>
+   */
+  public function decFormElement($form_element) {
+    $next = $form_element;
+    $tag_name = $next->tagName;
+    while ($next = $next->nextSibling) {
+      $tag_name = $next->tagName;
+      if (get_class($next) == 'DOMElement') {
+        $this->insertElementInPlace($form_element, $next);
+        $element->parentNode->insertBefore($form_element, $next);
+        break;
+      }
+    }
     return TRUE;
   }
 
@@ -1760,10 +1814,10 @@ class ContentModel extends XMLDatastream {
         $datastreams = $datastreams->item(0)->getElementsByTagName('datastream');
         for ($i = 0; $i < $datastreams->length; $i++) {
           $dsName = $datastreams->item($i)->getAttribute('dsid');
-          // if ($dsName != 'QDC')
-          // {
+// if ($dsName != 'QDC')
+// {
           $ds_array[] = $dsName;
-          // }
+// }
         }
       }
     }
