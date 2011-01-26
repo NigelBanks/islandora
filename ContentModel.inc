@@ -1382,29 +1382,11 @@ class ContentModel extends XMLDatastream {
   /**
    *
    * @param <type> $element_definition
-   * @param <type> $element
-   */
-  private function addFormControlsToElement($element_definition, $element) {
-    unset($element_definition['type']);
-    foreach ($element_definition as $key => $value) {
-      $form_control = $this->xml->createElement($key);
-      $element->appendChild($form_control);
-      if (isset($value) && $value != '') {
-        $text_node = $this->xml->createTextNode($value);
-        $form_control->appendChild($text_node);
-      }
-    }
-  }
-
-  /**
-   *
-   * @param <type> $element_definition
    * @param <type> $parent_element
    * @return <type> 
    */
-  public function addElementToForm($element_definition, $parent_element) {
-    $element = $this->xml->createElement($element_definition['type']);
-    $this->addFormControlsToElement($element_definition, $element);
+  public function addElementToForm($element, $parent_element) {
+    $element = $this->xml->importNode($element, TRUE);
     $parent_element->appendChild($element);
     return TRUE;
   }
@@ -1414,9 +1396,8 @@ class ContentModel extends XMLDatastream {
    * @param <type> $element_definition
    * @param <type> $parent_element
    */
-  public function editFormElement($element_definition, $edit_element) {
-    $new_element = $this->xml->createElement($element_definition['type']);
-    $this->addFormControlsToElement($element_definition, $new_element);
+  public function editFormElement($new_element, $edit_element) {
+    $new_element = $this->xml->importNode($new_element, TRUE);
     $this->insertElementInPlace($new_element, $edit_element);
     $edit_element->parentNode->removeChild($edit_element);
     return TRUE;
@@ -1444,12 +1425,9 @@ class ContentModel extends XMLDatastream {
    */
   public function incFormElement($form_element) {
     $prev = $form_element;
-    $tag_name = $prev->tagName;
     $name = $prev->getAttribute('name');
     while ($prev = $prev->previousSibling) {
-      $tag_name = $prev->tagName;
       if (get_class($prev) == 'DOMElement') {
-        $name = $prev->getAttribute('name');
         $form_element->parentNode->insertBefore($form_element, $prev);
         break;
       }
@@ -1464,9 +1442,7 @@ class ContentModel extends XMLDatastream {
    */
   public function decFormElement($form_element) {
     $next = $form_element;
-    $tag_name = $next->tagName;
     while ($next = $next->nextSibling) {
-      $tag_name = $next->tagName;
       if (get_class($next) == 'DOMElement') {
         $this->insertElementInPlace($form_element, $next);
         break;

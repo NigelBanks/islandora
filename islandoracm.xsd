@@ -232,72 +232,7 @@
 					</xsd:all>
 				</xsd:complexType>
 			</xsd:element>
-			<xsd:element minOccurs="1" name="other_select">
-				<xsd:complexType>
-					<xsd:all maxOccurs="1" minOccurs="1">
-						<xsd:element name="title" type="xsd:normalizedString"/>
-						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
-						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
-							type="formControlXPathType"> </xsd:element>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
-					</xsd:all>
-				</xsd:complexType>
-			</xsd:element>
-			<xsd:element minOccurs="1" name="copyright">
-				<xsd:complexType>
-					<xsd:all maxOccurs="1" minOccurs="1">
-						<xsd:element name="title" type="xsd:normalizedString"/>
-						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
-						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
-							type="formControlXPathType"> </xsd:element>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
-					</xsd:all>
-				</xsd:complexType>
-			</xsd:element>
 			<xsd:element minOccurs="1" name="filechooser">
-				<xsd:complexType>
-					<xsd:all maxOccurs="1" minOccurs="1">
-						<xsd:element name="title" type="xsd:normalizedString"/>
-						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
-						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
-							type="formControlXPathType"> </xsd:element>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
-					</xsd:all>
-				</xsd:complexType>
-			</xsd:element>
-			<xsd:element minOccurs="1" name="person">
-				<xsd:complexType>
-					<xsd:all maxOccurs="1" minOccurs="1">
-						<xsd:element name="title" type="xsd:normalizedString"/>
-						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
-						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
-							type="formControlXPathType"> </xsd:element>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
-					</xsd:all>
-				</xsd:complexType>
-			</xsd:element>
-			<xsd:element minOccurs="1" name="organization">
-				<xsd:complexType>
-					<xsd:all maxOccurs="1" minOccurs="1">
-						<xsd:element name="title" type="xsd:normalizedString"/>
-						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
-						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
-							type="formControlXPathType"> </xsd:element>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
-					</xsd:all>
-				</xsd:complexType>
-			</xsd:element>
-			<xsd:element minOccurs="1" name="conference">
 				<xsd:complexType>
 					<xsd:all maxOccurs="1" minOccurs="1">
 						<xsd:element name="title" type="xsd:normalizedString"/>
@@ -323,19 +258,6 @@
 					</xsd:all>
 				</xsd:complexType>
 			</xsd:element>
-			<xsd:element minOccurs="1" name="people">
-				<xsd:complexType>
-					<xsd:all maxOccurs="1" minOccurs="1">
-						<xsd:element name="title" type="xsd:normalizedString"/>
-						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
-						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
-							type="formControlXPathType"> </xsd:element>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
-					</xsd:all>
-				</xsd:complexType>
-			</xsd:element>
 			<xsd:element maxOccurs="1" minOccurs="1" name="tabpanel">
 				<xsd:complexType>
 					<xsd:all maxOccurs="1" minOccurs="1">
@@ -344,9 +266,6 @@
 						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
 							type="formControlXPathType"> </xsd:element>
 						<xsd:element name="content" type="formElementType"/>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
-						<xsd:element minOccurs="0" name="default_value" type="xsd:normalizedString"
-						/>
 					</xsd:all>
 				</xsd:complexType>
 			</xsd:element>
@@ -359,7 +278,6 @@
 							type="formControlXPathType"> </xsd:element>
 						<xsd:element minOccurs="0" name="element_validate"
 							type="formControlElementValidateType"/>
-						<xsd:element minOccurs="0" name="required" type="xsd:boolean"/>
 						<xsd:element name="return_value" type="xsd:normalizedString"/>
 					</xsd:all>
 				</xsd:complexType>

@@ -6,6 +6,7 @@
  * @file
  */
 module_load_include('inc', 'fedora_repository', 'ContentModel');
+module_load_include('inc', 'islandora_content_modeller', 'includes/FormElementDocument');
 
 /**
  *
@@ -281,20 +282,6 @@ class FormTree {
   }
 
   /**
-   *
-   * @param String $type
-   * @param Array $element_properties
-   * @return Array
-   */
-  private function getElementDefinition($type, $element_properties) {
-    $definition['type'] = $type;
-    foreach ($element_properties as $name => $value) {
-      $definition[$name] = $value;
-    }
-    return $definition;
-  }
-
-  /**
    * Removes a form from the content model.
    *
    * @param String $form_name
@@ -319,15 +306,15 @@ class FormTree {
   /**
    *
    * @param String $type
-   * @param Array $element_properties
+   * @param Array $element_properties_form_values
    * @param String $form_name
    * @param Array $path
    * @return TRUE if successful, FALSE otherwise.
    */
-  public function addFormElement($type, $element_properties, $form_name, $path) {
-    $definition = $this->getElementDefinition($type, $element_properties);
+  public function addFormElement($type, $element_properties_form_values, $form_name, $path) {
+    $form_element_document = new FormElementDocument($type, $element_properties_form_values);
     $form_element = $this->findFormElementFromPath($form_name, $path);
-    $result = $this->contentModel->addElementToForm($definition, $form_element);
+    $result = $this->contentModel->addElementToForm($form_element_document->documentElement, $form_element);
     return $result && $this->contentModel->saveToFedora();
   }
 
@@ -346,14 +333,14 @@ class FormTree {
   /**
    *
    * @param <type> $type
-   * @param <type> $element_properties
+   * @param <type> $element_properties_form_values
    * @param <type> $form_name
    * @param <type> $path 
    */
-  public function editFormElement($type, $element_properties, $form_name, $path) {
-    $definition = $this->getElementDefinition($type, $element_properties);
+  public function editFormElement($type, $element_properties_form_values, $form_name, $path) {
+    $form_element_document = new FormElementDocument($type, $element_properties_form_values);
     $form_element = $this->findFormElementFromPath($form_name, $path);
-    $result = $this->contentModel->editFormElement($definition, $form_element);
+    $result = $this->contentModel->editFormElement($form_element_document->documentElement, $form_element);
     return $result && $this->contentModel->saveToFedora();
   }
 
@@ -402,6 +389,7 @@ class FormTree {
             'textfield' => 'textfield',
             'textarea' => 'textarea',
             'list' => 'list',
+            'select' => 'select',
             'checkbox' => 'checkbox',
           ),
           '#ahah' => array(
@@ -455,6 +443,33 @@ class FormTree {
 
   /**
    *
+   * @param <type> $form_element
+   * @param <type> $tag_name
+   *
+   * @return
+   */
+  private function getElementValue($tag_name, $form_element = NULL) {
+    if ($form_element) {
+      $result = $form_element->getElementsByTagName($tag_name);
+      if ($result && $result->length == 1) {
+        return $result->item(0)->textContent;
+      }
+    }
+    return NULL;
+  }
+
+  private function getAttributeValue($tag_name, $attribute_name, $form_element = NULL) {
+    if ($form_element) {
+      $result = $form_element->getElementsByTagName($tag_name);
+      if ($result && $result->length == 1) {
+        return $result->item(0)->getAttribute($attribute_name);
+      }
+    }
+    return NULL;
+  }
+
+  /**
+   *
    * @param <type> $element_type
    * @return <type> 
    */
@@ -470,23 +485,6 @@ class FormTree {
       '#suffix' => '</div>',
       $form
     );
-  }
-
-  /**
-   *
-   * @param <type> $form_element
-   * @param <type> $tag_name
-   *
-   * @return
-   */
-  private function getElementValue($tag_name, $form_element = NULL) {
-    if ($form_element) {
-      $result = $form_element->getElementsByTagName($tag_name);
-      if ($result && $result->length == 1) {
-        return $result->item(0)->textContent;
-      }
-    }
-    return NULL;
   }
 
   /**
@@ -519,33 +517,108 @@ class FormTree {
         '#description' => t('The xpath of the form element.'),
         '#default_value' => $this->getElementValue('xpath', $form_element),
       ),
-      'xpath_full' => array(
+      'full_path' => array(
         '#type' => 'checkbox',
         '#title' => t('XPath Full?'),
         '#description' => t('Is the xpath complete? Or is it build with the help of a parent element?'),
-        '#default_value' => $this->getElementValue('xpath_full', $form_element),
+        '#default_value' => $this->getAttributeValue('xpath', 'full_path', $form_element) == 'true',
       ),
+    );
+  }
+
+  /**
+   *
+   * @param Array $form_element
+   * @return Array
+   */
+  private function getTextfieldElementProperties($form_element) {
+    return array(
       'required' => array(
         '#type' => 'checkbox',
         '#title' => t('Required?'),
         '#description' => t('Is this form element required?'),
-        '#default_value' => $this->getElementValue('required', $form_element),
+        '#default_value' => $this->getElementValue('required', $form_element) == 'true',
+      ),
+      'default_value' => array(
+        '#type' => 'textfield',
+        '#title' => t('Default Value'),
+        '#size' => 100,
+        '#description' => t('Specify the default value for this textfield.'),
+        '#default_value' => $this->getElementValue('default_value', $form_element),
+      ),
+    );
+  }
+
+  /**
+   *
+   * @param Array $form_element
+   * @return Array
+   */
+  private function getTextareaElementProperties($form_element) {
+    return array(
+      'required' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Required?'),
+        '#description' => t('Is this form element required?'),
+        '#default_value' => $this->getElementValue('required', $form_element) == 'true',
+      ),
+      'default_value' => array(
+        '#type' => 'textarea',
+        '#title' => t('Default Value'),
+        '#rows' => 1,
+        '#cols' => 1,
+        '#description' => t('Specify the default value for this textarea.'),
+        '#default_value' => $this->getElementValue('default_value', $form_element),
       )
     );
   }
 
   /**
    *
-   * @param Array $form
+   * @param Array $form_element
    * @return Array
    */
-  function getTextfieldElementProperties($form_element) {
+  private function getSelectElementProperties($form_element) {
     return array(
+      'required' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Required?'),
+        '#description' => t('Is this form element required?'),
+        '#default_value' => $this->getElementValue('required', $form_element) == 'true',
+      ),
+      'options' => array(
+        '#type' => 'list',
+        '#required' => TRUE,
+        '#title' => t('Options'),
+        '#description' => t('Specify the options.'),
+        '#default_value' => $this->getElementValue('options', $form_element),
+      ),
+      'ignoreFirstOption' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Ignore First Option'),
+        '#description' => t('Should the first option be ignored?'),
+        '#default_value' => $this->getAttributeValue('options', 'ignoreFirstOption', $form_element) == 'true',
+      )
+    );
+  }
+
+  /**
+   *
+   * @param Array $form_element
+   * @return Array
+   */
+  private function getListElementProperties($form_element) {
+    return array(
+      'required' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Required?'),
+        '#description' => t('Is this form element required?'),
+        '#default_value' => $this->getElementValue('required', $form_element) == 'true',
+      ),
       'default_value' => array(
-        '#type' => 'textfield',
+        '#type' => 'list',
         '#title' => t('Default Value'),
-        '#size' => 100,
-        '#description' => t('Specify the default value for this textfield.'),
+        '#description' => t('Specify the default value for this list.'),
         '#default_value' => $this->getElementValue('default_value', $form_element),
       )
     );
@@ -555,7 +628,32 @@ class FormTree {
    *
    * @return Array
    */
-  function getFieldsetElementProperties($form_element) {
+  private function getFieldsetElementProperties($form_element) {
+    return array(
+      'collapsible' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Collapsible?'),
+        '#description' => t('Indicates whether or not the fieldset can be collapsed with JavaScript. See #collapsed property.'),
+        '#default_value' => $this->getElementValue('collapsible', $form_element) == 'true',
+      ),
+      'collapsed' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Collapsed?'),
+        '#description' => t('Indicates whether or not the fieldset is collapsed by default. See #collapsible property.'),
+        '#default_value' => $this->getElementValue('collapsed', $form_element) == 'true',
+      ),
+      'content' => array(
+        '#type' => 'hidden',
+        '#default_value' => NULL,
+      )
+    );
+  }
+
+  /**
+   * @param Array $form_element
+   * @return Array
+   */
+  private function getTabpanelElementProperties($form_element) {
     return array(
       'content' => array(
         '#type' => 'hidden',
@@ -565,18 +663,20 @@ class FormTree {
   }
 
   /**
-   *
+   * @param Array $form_element
    * @return Array
    */
-  function getTabpanelElementProperties($form_element) {
+  private function getCheckboxElementProperties($form_element) {
     return array(
-      'content' => array(
-        '#type' => 'hidden',
-        '#default_value' => NULL,
-      )
+      'return_value' => array(
+        '#type' => 'textfield',
+        '#title' => t('Return Value'),
+        '#size' => 100,
+        '#description' => t('Specify the return value for this checkbox.'),
+        '#default_value' => $this->getElementValue('return_value', $form_element),
+      ),
     );
   }
-
 }
 
 /**
@@ -584,7 +684,7 @@ class FormTree {
  * 
  */
 function icm_process_params($params) {
-  if(is_array($params)) {
+  if (is_array($params)) {
     list($model_pid, $form_name) = $params;
     $path = implode(' ', array_splice($params, 2));
     return array($model_pid, $form_name, $path);

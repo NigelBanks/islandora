@@ -16,8 +16,6 @@ define('MODULE_ROOT', $base_url . '/' . drupal_get_path('module', 'islandora_con
 
 module_load_include('inc', 'islandora_content_modeller', 'includes/FormTree');
 
-
-
 /**
  * A short description goes here
  *
@@ -591,6 +589,13 @@ function islandora_content_modeller_main() {
   );
   drupal_add_js(array('ahah' => array('edit-form-type' => $ahah_binding)), 'setting');
 
+  // Lists include in ahah need this... Urg hack
+  $path = drupal_get_path('module', 'islandora_form_elements');
+  drupal_add_js($path . '/js/jquery.tag.editor-min.js');
+  drupal_add_js($path . '/js/list.js');
+  drupal_add_css($path . '/css/list.css');
+  // End hack
+
   $moduleRoot = $base_url . '/' . $moduleRoot;
 
   $content = '<div class="contentModeller">';
@@ -653,7 +658,7 @@ function icm_ajax_button() {
     $params = preg_split('/\s+/', trim($_GET['formReq']));
   }
   $callback = array_shift($params);
-  if(function_exists($callback)) {
+  if (function_exists($callback)) {
     call_user_func($callback, $params);
   }
 
@@ -3145,8 +3150,6 @@ function icm_model_create_element_definition_from_form_values($type_name, $form_
   }
   return $definition;
 }
-
-
 
 /**
  * A short description goes here
