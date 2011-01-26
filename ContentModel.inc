@@ -1469,7 +1469,6 @@ class ContentModel extends XMLDatastream {
       $tag_name = $next->tagName;
       if (get_class($next) == 'DOMElement') {
         $this->insertElementInPlace($form_element, $next);
-        $element->parentNode->insertBefore($form_element, $next);
         break;
       }
     }
