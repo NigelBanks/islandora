@@ -68,7 +68,6 @@ class FormComposition {
     if (isset($this->mods)) {
       $parents = array();
       $this->populateFormValues($form, $form, $parents);
-      //exit();
     }
     return $form;
   }
@@ -167,8 +166,6 @@ class FormComposition {
           break;
         }
       }
-      //var_dump($xpath);
-      //echo('<br/>');
       return $xpath;
     }
   }

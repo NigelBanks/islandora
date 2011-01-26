@@ -45,9 +45,9 @@ class ModsDocument extends DOMDocument {
    * @param array &$form_values
    *   Submited form values in which the MODS document is generated from.
    */
-  function __construct(&$form_values, $pid) {
+  function __construct(&$form_values, $pid = NULL) {
     parent::__construct();
-    if($pid) {
+    if($pid) { // Load existing MODS datastream
       $fedora_item = new fedora_item($pid);
       $xml = $fedora_item->get_datastream_dissemination('MODS');
       $this->loadXML($xml);
@@ -119,9 +119,6 @@ class ModsDocument extends DOMDocument {
     $form = &$this->form[self::root];
     $this->recurseElements($form, $form_values);
     $this->setRootAttributes();
-    say("Testing");
-    say(($this->saveXML()));
-    exit();
   }
 
   /**
@@ -181,9 +178,6 @@ class ModsDocument extends DOMDocument {
           $value = $this->getValue($item, $form_value);
           if ($path) {
             if (is_string($value) && $value != '') {
-              var_dump($path);
-              var_dump($value);
-              echo "<br/>";
               $this->createOrModifyElement($path, $item, $value);
             }
             else if (is_array($value)) {
@@ -191,9 +185,6 @@ class ModsDocument extends DOMDocument {
               for($i = 0; $i < $count; $i++) {
                 if (is_string($value[$i]) && $value[$i] != '') {
                   $path_index = $i + 1;
-                  var_dump($path . "[$path_index]");
-                  var_dump($value[$i]);
-                  echo "<br/>";
                   $this->createOrModifyElement($path . "[$path_index]", $item, $value[$i]);
                 }
               }
@@ -249,7 +240,7 @@ class ModsDocument extends DOMDocument {
     $class = get_class($node);
     switch ($class) {
       case 'DOMElement':
-        $node->appendChild($this->createTextNode($form_value));
+        $node->nodeValue = $form_value;
         break;
       case 'DOMAttr':
         $node->value = $form_value;
@@ -527,12 +518,10 @@ class ModsFormBuilder extends FormBuilder {
    */
   public function handleEditMetadataForm(&$form_id, &$form_values, &$soap_client) {
     $mods = new ModsDocument($form_values, $this->pid); // TODO: We need to pass the Object pid as well for merging.
-    say($mods->saveXML());
-    exit();
     $this->modifyDatastream($mods, 'MODS', 'MODS Record', 'text/xml');
     $dublin_core = new DomDocument("1.0", "UTF-8");
     $dublin_core->formatOutput = TRUE;
-    $dublin_core->appendChild($this->transformModsToDublinCore($mods->saveXML(), $dublin_core));
+    $dublin_core->appendChild($this->transformModsToDublinCore($mods, $dublin_core));
     $this->modifyDatastream($dublin_core, 'DC', "Dublin Core Record", 'text/xml');
     drupal_goto('/fedora/repository/' . $this->pid);
   }
@@ -608,7 +597,7 @@ class ModsFormBuilder extends FormBuilder {
     $foxml_document->appendChild($root);
 
     // Add default values as specified by FormBuilder.inc
-    $form_values['dc:title'] = $form_values['mods_title'];
+    $form_values['dc:title'] = $this->getDublinCoreTitle($form_values);
     $this->createStandardFedoraStuff($form_values, $foxml_document, $root);
     $this->createRelationShips($form_values, $foxml_document, $root);
 
@@ -798,8 +787,6 @@ class ModsFormBuilder extends FormBuilder {
     $version_attributes = array('ID' => 'MODS.0', 'LABEL' => 'MODS Record', 'MIMETYPE' => 'text/xml');
     list($datastream, $content) = $this->createDatastream($foxml_document, $attributes, $version_attributes);
     $mods = new ModsDocument($form_values);
-    say(htmlentities($mods->saveXML()));
-    exit();
     $node = $foxml_document->importNode($mods->documentElement, TRUE);
     $content->appendChild($node);
     $root->appendChild($datastream);
@@ -854,6 +841,29 @@ class ModsFormBuilder extends FormBuilder {
     $test = $doc->saveXML($doc->firstChild);
     $dublin_core_document->appendXML($doc->saveXML($doc->firstChild));
     return $dublin_core_document;
+  }
+
+  /**
+   *
+   * @param Array $form_values
+   * @return String
+   */
+  private function getDublinCoreTitle(&$form_values) {
+    $mods = new ModsDocument($form_values);
+    $xsl = new DOMDocument();
+    $xsl->load(drupal_get_path('module', 'fedora_repository') . '/workflow_client/xsl/mods_to_dc.xsl');
+    $proc = new XSLTProcessor();
+    $proc->importStyleSheet($xsl);
+    $xml = $proc->transformToXML($mods);
+    $doc = new DOMDocument();
+    $doc->loadXML($xml);
+    $xpath = new DOMXPath($doc);
+    $xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
+    $result = $xpath->evaluate('//dc:title');
+    if($result && $result->length != 0) {
+      return $result->item(0)->textContent;
+    }
+    return 'No Title Specified.';
   }
 
 }
