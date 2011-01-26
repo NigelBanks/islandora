@@ -158,7 +158,7 @@ class FormTree {
     if (!method_exists($this, $function))
       return FALSE;
     $children = $element->childNodes;
-    array_unshift($params, &$element); // Dummy placeholder for each child.
+    array_unshift($params, $element); // Dummy placeholder for each child.
     for ($i = 0; $i < $children->length; $i++) {
       $child = $children->item($i);
       if (get_class($child) != 'DOMElement') {
