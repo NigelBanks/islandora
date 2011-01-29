@@ -241,7 +241,7 @@ class ObjectHelper {
 
     require_once($path . '/api/fedora_item.inc');
     $item = new Fedora_Item($pid);
-
+    $purgeImage = '';
     if (user_access(ObjectHelper :: $PURGE_FEDORA_OBJECTSANDSTREAMS)) {
       $allow=TRUE;
       if (module_exists('fedora_fesl')) { 
@@ -467,7 +467,7 @@ class ObjectHelper {
     }
 
     $content .= $dataStreamBody;
-
+    $purgeObject = '';
     if (user_access(ObjectHelper :: $PURGE_FEDORA_OBJECTSANDSTREAMS)) {
 	$allow=TRUE;
 	if (module_exists('fedora_fesl')) { 
@@ -697,6 +697,7 @@ class ObjectHelper {
       //  if(strlen($objectList)>22||$contentModel=='Collection'||$contentModel=='Community')//length of empty dom still equals 22 because of <table/> etc
       module_load_include('inc', 'Fedora_Repository', 'CollectionPolicy');
       $collectionPolicyExists = $objectHelper->getMimeType($pid, CollectionPolicy::getDefaultDSID());
+      $ingestObject = '';
       if (user_access(ObjectHelper :: $INGEST_FEDORA_OBJECTS) && $collectionPolicyExists) {
         if (!empty($collectionPolicyExists)) {
 	  $allow=TRUE;
@@ -992,7 +993,7 @@ class ObjectHelper {
     $matches =str_getcsv(join("\n",$result));
     if ($matches !== NULL) {
 			$parent = preg_replace('/^info:fedora\//','',$matches[0]);
-      $breadcrumbs[] = l($matches[1], 'fedora/repository/' . $pid);
+      $breadcrumbs[] = l(isset($matches[1])? $matches[1] : '', 'fedora/repository/' . $pid);
       if ($parent == variable_get('fedora_repository_pid', 'islandora:top')) {
         $breadcrumbs[] = l(t('Home'), ''); // l(t('Digital repository'), 'fedora/repository');
       } elseif ($level > 0) {
