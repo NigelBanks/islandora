@@ -40,6 +40,15 @@ class FormElementDocument extends DOMDocument {
   }
 
   /**
+   * Checks if a value is set and is valid.
+   * @param mixed $value
+   *   The value to test for existance.
+   */
+  private function valueExists($value) {
+    return isset($value) && (is_string($value) ? trim($value) != '' : TRUE);
+  }
+
+  /**
    * Append all properties from the form that are common to all form
    * element types.
    * 
@@ -50,13 +59,17 @@ class FormElementDocument extends DOMDocument {
    *   properties.
    */
   private function setCommonElementProperties(&$root, &$values) {
-    $title = $root->appendChild(new DOMElement('title'));
+    $title = $root->appendChild(new DOMElement('title')); // Required.
     $title->appendChild(new DOMText($values['title']));
-    $description = $root->appendChild(new DOMElement('description'));
-    $description->appendChild(new DOMText($values['description']));
-    $xpath = $root->appendChild(new DOMElement('xpath'));
-    $xpath->appendChild(new DOMText($values['xpath']));
-    $xpath->setAttribute('full_path', $values['full_path'] ? 'true' : 'false');
+    if($this->valueExists($values['description'])) {
+      $description = $root->appendChild(new DOMElement('description'));
+      $description->appendChild(new DOMText($values['description']));
+    }
+    if($this->valueExists($values['xpath']) || $values['full_path']) {
+      $xpath = $root->appendChild(new DOMElement('xpath'));
+      $xpath->appendChild(new DOMText($values['xpath']));
+      $xpath->setAttribute('full_path', $values['full_path'] ? 'true' : 'false');
+    }
   }
 
   /**
