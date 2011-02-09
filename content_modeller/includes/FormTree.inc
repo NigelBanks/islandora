@@ -391,6 +391,7 @@ class FormTree {
             'list' => 'list',
             'select' => 'select',
             'checkbox' => 'checkbox',
+            'hidden' => 'hidden',
           ),
           '#ahah' => array(
             'path' => 'admin/content/modeller/ajax/element/properties',
@@ -674,6 +675,22 @@ class FormTree {
         '#size' => 100,
         '#description' => t('Specify the return value for this checkbox.'),
         '#default_value' => $this->getElementValue('return_value', $form_element),
+      ),
+    );
+  }
+
+  /**
+   * @param Array $form_element
+   * @return Array
+   */
+  private function getHiddenElementProperties($form_element) {
+    return array(
+      'value' => array(
+        '#type' => 'textfield',
+        '#title' => t('Value'),
+        '#size' => 100,
+        '#description' => t('Specify the value for this hidden element.'),
+        '#default_value' => $this->getElementValue('value', $form_element),
       ),
     );
   }

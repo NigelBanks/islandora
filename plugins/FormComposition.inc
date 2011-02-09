@@ -317,7 +317,13 @@ class FormComposition {
   private function DefaultFormControlValueFunction(&$name, &$node) {
     $count = $this->formDocumentXPath->evaluate("count(child::*)", $node);
     if ($count == 0) {
-      return array('#' . $name => $this->formDocumentXPath->evaluate('child::text()', $node)->item(0)->textContent);
+      $result = $this->formDocumentXPath->evaluate('child::text()', $node);
+      if($result !== FALSE && $result->length > 0) {
+        return array('#' . $name => $result->item(0)->textContent);
+      }
+      else {
+        return array('#' . $name => NULL);
+      }
     }
     else { // Array of values
       return array('#' . $name => $this->mapNodeListToArray($this->formDocumentXPath->evaluate('child::*/child::text()', $node), NULL, 'textContent'));

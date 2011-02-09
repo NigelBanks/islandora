@@ -185,4 +185,18 @@ class FormElementDocument extends DOMDocument {
     $return_value->appendChild(new DOMText($values['return_value']));
   }
 
+  /**
+   * Append all properties specific to hidden elements.
+   *
+   * @param DOMElement $root
+   *   Root element of the dom document.
+   * @param Array $values
+   *   An array of submitted values, repersenting the form element's
+   *   properties.
+   */
+  private function setHiddenElementProperties(&$root, &$values) {
+    $return_value = $root->appendChild(new DOMElement('value'));
+    $return_value->appendChild(new DOMText($values['value']));
+  }
+
 }

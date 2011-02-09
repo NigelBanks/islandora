@@ -17,16 +17,16 @@
  *   An array that contains the values for the panel that contained the 
  *   $clicked_button.
  */
-function &ife_get_tabpanel_values($clicked_button)
-{
-  $parents = $clicked_button['#array_parents'];  
+function &ife_get_tabpanel_values($clicked_button) {
+  $parents = $clicked_button['#array_parents'];
   $depth = count($parents) - 2;
   $point = &$_POST;
-  for($i = 0; $i < $depth; $i++) { 
+  for ($i = 0; $i < $depth; $i++) {
     $point = &$point[$parents[$i]];
   }
   return $point;
 }
+
 /**
  * Gets the tabpanel's content form element.
  *
@@ -38,16 +38,16 @@ function &ife_get_tabpanel_values($clicked_button)
  * @return
  *   The tabpanel's content form element.
  */
-function &ife_get_tabpanel_content(&$form, $clicked_button)
-{
+function &ife_get_tabpanel_content(&$form, $clicked_button) {
   $parents = $clicked_button['#array_parents'];
   $depth = count($parents) - 2; // The button element and the tab its under decreases the depth by 2
   $point = &$form;
-  for($i = 0; $i < $depth; $i++) { 
+  for ($i = 0; $i < $depth; $i++) {
     $point = &$point[$parents[$i]];
   }
   return $point;
 }
+
 /**
  * Calculates the number of tab panels.
  *
@@ -57,39 +57,43 @@ function &ife_get_tabpanel_content(&$form, $clicked_button)
  * @return
  *   The number of panels.
  */
-function ife_count_tabpanels(&$content)
-{
+function ife_count_tabpanels(&$content) {
   $count = 1;
-  while($content[$count])
+  while (isset($content[$count]))
     $count++;
   return $count;
 }
+
 /**
  * Helper function for ife_remove_tabpanel_from_form
  */
-function _ife_remove_tabpanel_from_form(&$form, $clicked_button) 
-{
+function _ife_remove_tabpanel_from_form(&$form, $clicked_button) {
   $content = &ife_get_tabpanel_content($form, $clicked_button);
   $count = ife_count_tabpanels($content);
-  $index =  $clicked_button['#tab'];
-  for($i = $index; $i < $count; $i++) {
-    $content[$i] = $content[$i+1];
+  $index = $clicked_button['#tab'];
+  for ($i = $index; $i < $count; $i++) {
+    if (isset($content[$i + 1])) {
+      $content[$i] = $content[$i + 1];
+    }
   }
-  unset($content[$count-1]);
+  unset($content[$count - 1]);
 }
+
 /**
  * Helper function for ife_remove_tabpanel_values
  */
-function _ife_remove_tabpanel_values(&$form, $clicked_button) 
-{
+function _ife_remove_tabpanel_values(&$form, $clicked_button) {
   $content = ife_get_tabpanel_values($clicked_button);
   $count = count($content);
-  $index =  $clicked_button['#tab'];
-  for($i = $index; $i < $count; $i++) {
-    $content[$i] = $content[$i+1];
+  $index = $clicked_button['#tab'];
+  for ($i = $index; $i < $count; $i++) {
+    if (isset($content[$i + 1])) {
+      $content[$i] = $content[$i + 1];
+    }
   }
-  unset($content[$count-1]);
+  unset($content[$count - 1]);
 }
+
 /**
  * Removes a tab panel.
  *
@@ -98,24 +102,24 @@ function _ife_remove_tabpanel_values(&$form, $clicked_button)
  * @param $clicked_button
  *   The button that initiated the ahah callback.
  */
-function ife_remove_tabpanel(&$form, $clicked_button) 
-{
+function ife_remove_tabpanel(&$form, $clicked_button) {
   _ife_remove_tabpanel_from_form($form, $clicked_button);
   _ife_remove_tabpanel_values($form, $clicked_button);
 }
+
 /**
  * Removes all tab panels from content except the first panel
  *
  * @param &$content
  *   An array containing the forms repersentation of each panel.
  */
-function ife_remove_added_tabpanels(&$content)
-{
+function ife_remove_added_tabpanels(&$content) {
   $count = ife_count_tabpanels($content);
-  for($i = 1; $i < $count; $i++) {
+  for ($i = 1; $i < $count; $i++) {
     unset($content[$i]);
   }
 }
+
 /**
  * Removes extra tab panels from child tab panel. 
  *
@@ -125,18 +129,18 @@ function ife_remove_added_tabpanels(&$content)
  * @param &$tabpanel
  *   An array containing the forms repersentation of each panel.
  */
-function ife_prune_extra_tabpanels(&$tabpanel)
-{
-  $children = &$tabpanel['children']; 
+function ife_prune_extra_tabpanels(&$tabpanel) {
+  $children = &$tabpanel['children'];
   foreach (element_children($children) as $key) { // Find child tabpanels
     $type = $children[$key]['#type'];
-    if(isset($children[$key]['content'])) {
+    if (isset($children[$key]['content'])) {
       $content = &$children[$key]['content'];
       ife_remove_added_tabpanels($content);
       ife_prune_extra_tabpanels($content[0]);
     }
   }
 }
+
 /**
  * Add a new tab panel.
  *
@@ -145,13 +149,13 @@ function ife_prune_extra_tabpanels(&$tabpanel)
  * @param &$clicked_button
  *   The add button.
  */
-function ife_add_tabpanel(&$form, $clicked_button) 
-{
+function ife_add_tabpanel(&$form, $clicked_button) {
   $content = &ife_get_tabpanel_content($form, $clicked_button);
   $count = ife_count_tabpanels($content);
   $content[$count] = $content[0];
   ife_prune_extra_tabpanels($content[$count]);
 }
+
 /**
  * Find the modified tabpanel that we will return via ahah.
  *
@@ -160,16 +164,16 @@ function ife_add_tabpanel(&$form, $clicked_button)
  * @param $clicked_button
  *   The button that initiated the ahah callback.
  */
-function ife_find_tabpanel_to_insert(&$form, $clicked_button)
-{
+function ife_find_tabpanel_to_insert(&$form, $clicked_button) {
   $parents = $clicked_button['#array_parents'];
   $depth = count($parents) - 3;
   $point = &$form;
-  for($i = 0; $i < $depth; $i++) { 
+  for ($i = 0; $i < $depth; $i++) {
     $point = &$point[$parents[$i]];
   }
   return $point;
 }
+
 /**
  * Checks if a form element in the clicked button that started the ahah 
  * callback.
@@ -177,32 +181,36 @@ function ife_find_tabpanel_to_insert(&$form, $clicked_button)
  * @param &$form
  *   Form element to check.
  */
-function is_clicked_button(&$form)
-{
+function is_clicked_button(&$form) {
   if (isset($form['#input']) && $form['#input']) {
     if (isset($form['#executes_submit_callback'])) {
       $name = $form['#name'];
-      $value = $form['#value']; 
+      $value = $form['#value'];
       if (isset($_POST[$name]) && $_POST[$name] == $value) {
-	return TRUE;
+        return TRUE;
       }
     }
   }
   return FALSE;
 }
+
 /**
  * Searches the form for the button that initiated the ahah callback.
  *
  * @return
  *   The clicked button.
  */
-function ife_find_clicked_button($form, $form_state)
-{
+function ife_find_clicked_button($form, $form_state) {
   // Process Form Element
   if ((!empty($form['#type'])) && ($info = _element_info($form['#type']))) {
     $form += $info;
   }
-  if (isset($form['#process']) && !$form['#processed']) {
+  if (!isset($form['#id'])) {
+    $form['#id'] = form_clean_id('edit-' . implode('-', $form['#parents']));
+  }
+  $process = isset($form['#process']);
+  $processed = isset($form['#processed']) && $form['#processed'];
+  if ($process && !$processed) {
     foreach ($form['#process'] as $process) {
       if (function_exists($process)) {
         $form = $process($form, isset($edit) ? $edit : NULL, $form_state, NULL);
@@ -210,7 +218,7 @@ function ife_find_clicked_button($form, $form_state)
     }
   }
   // Check if its the Droid we are looking for.
-  if(is_clicked_button($form)) {
+  if (is_clicked_button($form)) {
     return $form;
   }
   // Repeat previous steps for children while letting them know who their parents are.
@@ -226,85 +234,85 @@ function ife_find_clicked_button($form, $form_state)
     }
     // Recurse through all the elements.
     $result = ife_find_clicked_button($form[$key], $form_state);
-    if($result != NULL)
+    if ($result != NULL)
       return $result;
   }
   return NULL;
 }
+
 /**
  * Menu hook for ahah callbacks.
  *
  * Depending on the button clicked this will remove a panel or add one.
  */
-function ife_tabpanel_ahah() 
-{
-  if (!isset($_POST['form_build_id']))  
-    return;    
+function ife_tabpanel_ahah() {
+  if (!isset($_POST['form_build_id']))
+    return;
   $form_state = array('storage' => NULL, 'submitted' => FALSE, 'post' => $_POST);
   $form_build_id = $_POST['form_build_id'];
   if (!$form = form_get_cache($form_build_id, $form_state))
     exit();
 
   $clicked_button = ife_find_clicked_button($form, $form_state);
-  switch($clicked_button['#action']) {
-  case 'remove':
-    ife_remove_tabpanel($form, $clicked_button);
-    break;
-  case 'add':
-    ife_add_tabpanel($form, $clicked_button);
-    break;
-  default:
-    exit();
+  switch ($clicked_button['#action']) {
+    case 'remove':
+      ife_remove_tabpanel($form, $clicked_button);
+      break;
+    case 'add':
+      ife_add_tabpanel($form, $clicked_button);
+      break;
+    default:
+      exit();
   }
 
   $form_id = $form['#parameters'][0];
   $form['#post'] = $_POST;
-  $form['#programmed']  = FALSE;
+  $form['#programmed'] = FALSE;
   form_set_cache($form_build_id, $form, $form_state);
   $form = form_builder($form_id, $form, $form_state);
   $output = ife_find_tabpanel_to_insert($form, $clicked_button);
 
-  unset($output['#prefix'], $ouput['#suffix']);
+  unset($output['#prefix'], $output['#suffix']);
   $javascript = drupal_add_js(NULL, NULL, 'header');
   $settings = call_user_func_array('array_merge_recursive', $javascript['setting']);
   unset($settings['ahah']['']);
   drupal_json(array(
-		    'status'   => TRUE,
-		    'data'     => theme('status_messages') . drupal_render($output),
-		    'settings' => $settings,
-		    ));
+    'status' => TRUE,
+    'data' => theme('status_messages') . drupal_render($output),
+    'settings' => $settings,
+  ));
 }
+
 /**
  * Theme hook for a tabpanel
  */
-function theme_tabpanel($element) 
-{
+function theme_tabpanel($element) {
   global $base_url;
-  $path = drupal_get_path('module','islandora_form_elements');
-  drupal_add_js($path.'/js/jquery-ui-1.8.7.custom.min.js');
-  drupal_add_js($path.'/js/tabpanel_ahah.js');
-  drupal_add_css($path.'/css/ui-lightness/jquery-ui-1.8.7.custom.css');
-  return '<div id=' . t(implode('-',$element['#array_parents'])) . ' class="action-expand-tab">'.$element['#children'].'</div>';
+  $path = drupal_get_path('module', 'islandora_form_elements');
+  drupal_add_js($path . '/js/jquery-ui-1.8.7.custom.min.js');
+  drupal_add_js($path . '/js/tabpanel_ahah.js');
+  drupal_add_css($path . '/css/ui-lightness/jquery-ui-1.8.7.custom.css');
+  return '<div id=' . t(implode('-', $element['#array_parents'])) . ' class="action-expand-tab">' . $element['#children'] . '</div>';
 }
+
 /**
  * Theme hook for the tabpanels contents.
  */
-function theme_tabpanel_items($form) 
-{
+function theme_tabpanel_items($form) {
   $name = $form['#name'];
   $title = $form['#title'];
   $count = 1;
-  $output .= '<ul>';
-  $output .= '<li><a href="#' . $name . '-0">' . $title . '</a><span id="add-' . $name . '" class="ui-icon ui-icon-circle-plus" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">'.$form[0]["add-tab"]['#id'].'</span></li>';
+  $output = '<ul>';
+  $output .= '<li><a href="#' . $name . '-0">' . $title . '</a><span id="add-' . $name . '" class="ui-icon ui-icon-circle-plus" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">' . $form[0]["add-tab"]['#id'] . '</span></li>';
   $count = 1;
-  while($form[$count]) {
-    $output .= '<li><a href="#' . $name . '-'.$count.'">' . $count . '</a><span id="remove-' . $name . '-'. $count .'" class="ui-icon ui-icon-close" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">'. $form[$count]['remove-tab']['#id'] .'</span></li>';
+  while (isset($form[$count])) {
+    $output .= '<li><a href="#' . $name . '-' . $count . '">' . $count . '</a><span id="remove-' . $name . '-' . $count . '" class="ui-icon ui-icon-close" style="float: left; margin: 0.4em 0.2em 0 0; cursor: pointer;">' . $form[$count]['remove-tab']['#id'] . '</span></li>';
     $count++;
   }
   $output .= '</ul>';
   $count = 0;
-  while($form[$count]) {
-    $output .= '<div id="' . $name . '-'.$count.'">';
+  while (isset($form[$count])) {
+    $output .= '<div id="' . $name . '-' . $count . '">';
     $output .= drupal_render($form[$count]);
     $output .= '</div>';
     $count++;

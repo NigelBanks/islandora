@@ -47,7 +47,7 @@ class ModsDocument extends DOMDocument {
    */
   function __construct(&$form_values, $pid = NULL) {
     parent::__construct();
-    if($pid) { // Load existing MODS datastream
+    if ($pid) { // Load existing MODS datastream
       $fedora_item = new fedora_item($pid);
       $xml = $fedora_item->get_datastream_dissemination('MODS');
       $this->loadXML($xml);
@@ -89,7 +89,9 @@ class ModsDocument extends DOMDocument {
     if ((!empty($form['#type'])) && ($info = _element_info($form['#type']))) {
       $form += $info;
     }
-    if (isset($form['#process']) && !$form['#processed']) {
+    $process = isset($form['#process']);
+    $processed = isset($form['#processed']) && $form['#processed'];
+    if ($process && !$processed) {
       foreach ($form['#process'] as $process) {
         if (function_exists($process)) {
           $form = $process($form, isset($edit) ? $edit : NULL, $form_state, NULL);
@@ -101,10 +103,13 @@ class ModsDocument extends DOMDocument {
         $form[$key]['#tree'] = $form['#tree'];
       }
       if (!isset($form[$key]['#parents'])) {
-        $form[$key]['#parents'] = $form[$key]['#tree'] && $form['#tree'] ? array_merge($form['#parents'], array($key)) : array($key);
+        $form[$key]['#parents'] = isset($form[$key]['#tree']) && isset($form['#tree']) ? array_merge($form['#parents'], array($key)) : array($key);
         $array_parents = isset($form['#array_parents']) ? $form['#array_parents'] : array();
         $array_parents[] = $key;
         $form[$key]['#array_parents'] = $array_parents;
+      }
+      if (!isset($form[$key]['#id'])) {
+        $form[$key]['#id'] = form_clean_id('edit-' . implode('-', $form[$key]['#parents']));
       }
       $this->setInternalFormControls($form[$key], $form_state);
     }
@@ -182,7 +187,7 @@ class ModsDocument extends DOMDocument {
             }
             else if (is_array($value)) {
               $count = count($value);
-              for($i = 0; $i < $count; $i++) {
+              for ($i = 0; $i < $count; $i++) {
                 if (is_string($value[$i]) && $value[$i] != '') {
                   $path_index = $i + 1;
                   $this->createOrModifyElement($path . "[$path_index]", $item, $value[$i]);
@@ -564,8 +569,11 @@ class ModsFormBuilder extends FormBuilder {
   function handleIngestForm(&$form_values) {
     module_load_include('inc', 'fedora_repository', 'api/fedora_item');
     module_load_include('inc', 'fedora_repository', 'CollectionPolicy');
-    $foxml_document = $this->createFoxmlDocument($form_values);
-    $this->ingestFoxmlDocument($foxml_document, $form_values['ingest-file-location']);
+    $mods = new ModsDocument($form_values);
+    say($mods->saveXML());
+    exit();
+    //$foxml_document = $this->createFoxmlDocument($form_values);
+    //$this->ingestFoxmlDocument($foxml_document, $form_values['ingest-file-location']);
   }
 
   /**
@@ -860,7 +868,7 @@ class ModsFormBuilder extends FormBuilder {
     $xpath = new DOMXPath($doc);
     $xpath->registerNamespace('dc', 'http://purl.org/dc/elements/1.1/');
     $result = $xpath->evaluate('//dc:title');
-    if($result && $result->length != 0) {
+    if ($result && $result->length != 0) {
       return $result->item(0)->textContent;
     }
     return 'No Title Specified.';

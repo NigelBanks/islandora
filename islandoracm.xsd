@@ -282,6 +282,17 @@
 					</xsd:all>
 				</xsd:complexType>
 			</xsd:element>
+			<xsd:element name="hidden">
+				<xsd:complexType>
+					<xsd:all>
+						<xsd:element name="title" type="xsd:normalizedString"/>
+						<xsd:element minOccurs="0" name="description" type="xsd:normalizedString"/>
+						<xsd:element maxOccurs="1" minOccurs="0" name="xpath"
+							type="formControlXPathType"> </xsd:element>
+						<xsd:element minOccurs="1" name="value" type="xsd:normalizedString"/>
+					</xsd:all>
+				</xsd:complexType>
+			</xsd:element>
 		</xsd:choice>
 	</xsd:complexType>
 	<xsd:complexType name="formControlXPathType">
